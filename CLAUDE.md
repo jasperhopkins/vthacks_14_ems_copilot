@@ -91,6 +91,7 @@ hitting the API with `curl` + a JWT (or the app).
 
 ```bash
 python3 infra/tests/test_pcr_logic.py    # unit-ish, no AWS creds needed
+node mobile/tools/test_streaming.mjs     # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
 # it goes through Cognito SRP -> API Gateway -> Transcribe -> Bedrock ->
@@ -152,6 +153,11 @@ Every route sits behind the same Cognito JWT authorizer
 | `GET /pcr/upload-url` | `src/pcr/upload_url.py:handler` | `api.getUploadUrl` |
 | `POST /pcr/generate` | `src/pcr/app.py:handler` | `api.generatePcr` |
 | `GET /pcr/{encounter_id}` | `src/pcr/status.py:handler` | `api.getPcr` |
+| `POST /pcr/stream-chunk` | `src/pcr/chunk.py:handler` | `api.sendChunk` |
+| `GET /pcr/{encounter_id}/live` | `src/pcr/live.py:handler` | `api.getLiveTranscript` |
+| `POST /pcr/finalize` | `src/pcr/finalize.py:handler` | `api.finalizePcr` |
+| `POST /pcr/{encounter_id}/commit` | `src/pcr/records.py:commit_handler` | `api.commitPcr` |
+| `GET /pcr/saved` | `src/pcr/records.py:list_handler` | `api.listSavedPcrs` |
 | `POST /protocol/query` | `src/protocol/app.py:handler` | `api.queryProtocol` |
 | `POST /translate` | `src/translate/app.py:handler` | `api.translate` |
 | `POST /drug/lookup` | `src/drug/app.py:lookup_handler` | `api.lookupDrug` |
@@ -226,6 +232,51 @@ endpoint is a four-file change:
 
 ### Behaviors worth knowing before you edit
 
+- **The app streams audio straight to Amazon Transcribe.**
+  `useAudioStream` (expo-audio 57, works in Expo Go) gives int16 PCM
+  buffers; `src/api/transcribeStream.js` wraps them in AWS event-stream
+  frames and pushes them over a WebSocket the *device* signs with SigV4,
+  using temporary credentials from the Cognito identity pool
+  (`src/api/awsCreds.js`). Audio never touches our backend on this path —
+  the first the stack hears of an encounter is the finished transcript
+  POSTed to `/pcr/finalize`. Compliance consequences are item 8 of
+  `docs/HIPAA_NOTES.md`; read it before changing this.
+  - `COGNITO_IDENTITY_POOL_ID` **must be filled into
+    `mobile/src/config.js`** from the `IdentityPoolId` stack output, or
+    recording fails at "Connecting to transcription…".
+  - The event-stream codec and the presigner are covered offline by
+    `node mobile/tools/test_streaming.mjs`. Run it after touching either;
+    a wrong CRC or an unencoded query character just gets the socket
+    closed by AWS with no usable error.
+  - Sample rate is read from `stream.sampleRate` *after* `stream.start()`
+    and baked into the signed URL. It can't be assumed — the hardware may
+    refuse 16 kHz, and a mismatch produces garbled text, not an error.
+- **Extraction is asynchronous and the client polls for it.**
+  `/pcr/finalize` persists the transcript, marks the record `EXTRACTING`,
+  re-invokes its own Lambda with `InvocationType="Event"`, and returns
+  202; the app polls `GET /pcr/{id}` until `DRAFT`. Running Bedrock inline
+  is what made long recordings fail: the request passed API Gateway's
+  non-adjustable 30s ceiling and 504'd while the Lambda went on to write a
+  perfectly good draft nobody ever saw. Don't move it back inline.
+- **Each recording gets a unique `encounter_id`** (`${base}-${timestamp}`).
+  It used to come from a per-mount attempt counter, so navigating away and
+  back reused the previous encounter — and its stored transcript then
+  appeared prefixed to the next recording.
+- **The chunked path is still deployed and still works** (`/pcr/stream-chunk`
+  -> `/pcr/{id}/live` -> `/pcr/finalize` with no `transcript` in the body).
+  It's the fallback that needs no identity pool and keeps audio in the
+  CMK-encrypted bucket. `api.sendChunk`/`api.getLiveTranscript` are still
+  in the client; the screen no longer calls them.
+  - If you revive it: `recorder.prepareToRecordAsync()` must get options on
+    every call, or expo-audio's iOS side reuses one AVAudioRecorder and
+    file URL and each chunk overwrites the last mid-upload. And chunk state
+    is a DynamoDB map written with `UpdateItem` per key because uploads
+    overlap — a whole-record `PutItem` there silently drops chunks.
+- **Saved PCRs come from the sparse `ByUserSaved` GSI** (`created_by` +
+  `saved_at`). Only `/commit` writes `saved_at`, so drafts never appear in
+  the list. The GSI projects the flat `summary_*` / `search_text` /
+  `flag_count` attributes from `build_summary_attrs`; a new list-card
+  field has to be added there *and* to `NonKeyAttributes`.
 - Interaction checks read `contraindicated_with` off **both** drugs in a
   pair and emit at most one flag per pair, so seed data recording the
   contraindication on only one side still fires.
@@ -241,6 +292,12 @@ endpoint is a four-file change:
   maps "narcan" to the *brand* concept rather than naloxone, and returns no
   entity at all for "epi" or "nitro". Teach it a new nickname by seeding a
   row, not by editing code.
+- **Sign-in is a bare `fetch` to Cognito `InitiateAuth`
+  (`USER_PASSWORD_AUTH`), deliberately not the SDK's SRP flow.** SRP's
+  pure-JS bignum math takes tens of seconds on Hermes and blocks the UI
+  thread; this returns in ~350ms. Don't "fix" this by reinstating
+  `amazon-cognito-identity-js` without a native crypto module — and that
+  module rules out Expo Go. Tradeoff recorded in `docs/HIPAA_NOTES.md`.
 - **Mobile is on Expo SDK 57, which matters for audio.** `expo-av` was
   removed after SDK 54; recording and playback use `expo-audio`
   (`useAudioRecorder` + `RecordingPresets.HIGH_QUALITY`, `createAudioPlayer`).

@@ -31,7 +31,9 @@ os.environ.setdefault("DRUG_TABLE_NAME", "test-drugs")
 # Module-level boto3 clients exist in every handler; stub them at import.
 with mock.patch("boto3.resource"), mock.patch("boto3.client"):
     from common import drugs as drugs_mod
+    from common import pcr as pcr_common
     import app as pcr_app
+    import chunk as pcr_chunk
     import status as pcr_status
 
 SEED = {
@@ -131,23 +133,93 @@ class TestDrugsMentioned(unittest.TestCase):
             "patient_medications": ["Propranolol", "epinephrine"],
         }
         self.assertEqual(
-            pcr_status._drugs_mentioned(structured),
+            pcr_common.drugs_mentioned(structured),
             ["epinephrine", "albuterol", "Propranolol"],
         )
 
     def test_handles_missing_and_null_fields(self):
-        self.assertEqual(pcr_status._drugs_mentioned({}), [])
+        self.assertEqual(pcr_common.drugs_mentioned({}), [])
         self.assertEqual(
-            pcr_status._drugs_mentioned({"medications_administered": None, "patient_medications": None}),
+            pcr_common.drugs_mentioned({"medications_administered": None, "patient_medications": None}),
             [],
         )
 
     def test_tolerates_plain_strings_from_the_model(self):
         # Bedrock occasionally returns ["aspirin"] instead of [{"name": ...}].
         self.assertEqual(
-            pcr_status._drugs_mentioned({"medications_administered": ["aspirin"]}),
+            pcr_common.drugs_mentioned({"medications_administered": ["aspirin"]}),
             ["aspirin"],
         )
+
+
+class TestNormalizePcr(unittest.TestCase):
+    """The UI renders every field unconditionally and commit round-trips the
+    dict straight back, so a missing key from the model has to become an
+    explicit null here rather than an absent attribute downstream."""
+
+    def test_fills_in_every_field(self):
+        out = pcr_common.normalize_pcr({"chief_complaint": "Anaphylaxis"})
+        self.assertEqual(set(out), set(pcr_common.PCR_FIELDS))
+        self.assertEqual(out["chief_complaint"], "Anaphylaxis")
+        self.assertEqual(out["interventions"], [])
+        self.assertEqual(set(out["vitals"]), set(pcr_common.VITALS_FIELDS))
+        self.assertIsNone(out["vitals"]["bp"])
+
+    def test_coerces_bare_string_medications(self):
+        out = pcr_common.normalize_pcr({"medications_administered": ["aspirin"]})
+        self.assertEqual(
+            out["medications_administered"],
+            [{"name": "aspirin", "dose": None, "route": None, "time": None}],
+        )
+
+    def test_drops_blank_list_entries(self):
+        out = pcr_common.normalize_pcr({"allergies": ["", None, " penicillin "]})
+        self.assertEqual(out["allergies"], ["penicillin"])
+
+    def test_survives_a_non_dict(self):
+        self.assertEqual(pcr_common.normalize_pcr(None)["chief_complaint"], None)
+
+    def test_is_idempotent(self):
+        once = pcr_common.normalize_pcr({"chief_complaint": "Chest pain",
+                                         "medications_administered": ["aspirin"]})
+        self.assertEqual(pcr_common.normalize_pcr(once), once)
+
+
+class TestSummaryAttrs(unittest.TestCase):
+    """These are what the sparse ByUserSaved index projects; the list screen
+    has nothing else to render from."""
+
+    STRUCTURED = {
+        "chief_complaint": "Anaphylaxis",
+        "patient_age": "58",
+        "patient_sex": "male",
+        "narrative_summary": "Bee sting with airway swelling.",
+        "medications_administered": [{"name": "Epinephrine", "dose": "0.3 mg"}],
+        "patient_medications": ["Propranolol"],
+        "interventions": ["High-flow oxygen"],
+        "allergies": [],
+    }
+    FLAGS = [{"drug_a": "Epinephrine", "drug_b": "Propranolol", "severity": "CONTRAINDICATED"}]
+
+    def test_search_text_is_lowercased_and_covers_every_searchable_field(self):
+        attrs = pcr_common.build_summary_attrs(self.STRUCTURED, self.FLAGS)
+        text = attrs["search_text"]
+        self.assertEqual(text, text.lower())
+        for needle in ("anaphylaxis", "bee sting", "epinephrine", "propranolol",
+                       "high-flow oxygen", "58 male", "contraindicated"):
+            self.assertIn(needle, text)
+
+    def test_counts_flags_and_labels_the_patient(self):
+        attrs = pcr_common.build_summary_attrs(self.STRUCTURED, self.FLAGS)
+        self.assertEqual(attrs["flag_count"], 1)
+        self.assertEqual(attrs["patient_label"], "58 male")
+        self.assertEqual(attrs["summary_meds"], ["Epinephrine"])
+
+    def test_falls_back_when_the_narration_said_nothing_useful(self):
+        attrs = pcr_common.build_summary_attrs(pcr_common.normalize_pcr({}), [])
+        self.assertEqual(attrs["summary_chief_complaint"], "Unspecified complaint")
+        self.assertEqual(attrs["patient_label"], "Patient")
+        self.assertEqual(attrs["flag_count"], 0)
 
 
 class TestMediaFormat(unittest.TestCase):
@@ -165,6 +237,16 @@ class TestJobName(unittest.TestCase):
         name = pcr_app._job_name("demo/encounter 1")
         self.assertRegex(name, r"^ems-pcr-demo-encounter-1-[0-9a-f]{8}$")
         self.assertNotEqual(name, pcr_app._job_name("demo/encounter 1"))
+
+    def test_chunk_job_names_are_unique_per_sequence(self):
+        # Every chunk of one encounter starts its own Transcribe job, and
+        # job names are unique per account -- a collision would fail the
+        # chunk rather than overwrite anything, but silently mid-recording.
+        a = pcr_chunk._job_name("demo/encounter 1", 0)
+        b = pcr_chunk._job_name("demo/encounter 1", 1)
+        self.assertRegex(a, r"^ems-chunk-demo-encounter-1-0-[0-9a-f]{8}$")
+        self.assertRegex(b, r"^ems-chunk-demo-encounter-1-1-[0-9a-f]{8}$")
+        self.assertNotEqual(a, pcr_chunk._job_name("demo/encounter 1", 0))
 
 
 if __name__ == "__main__":

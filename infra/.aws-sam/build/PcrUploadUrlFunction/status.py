@@ -1,70 +1,59 @@
 """
-Module 1, step 3 of 3: poll for the PCR, and finish the pipeline when the
-transcript is ready.
+Poll target and detail view for a single encounter.
 
   GET /pcr/{encounter_id}
     -> { "status": "PROCESSING" }                       (job still running)
-    -> { "status": "COMPLETE", "pcr": {...}, "transcript": "...",
-         "interaction_flags": [...] }                   (done)
+    -> { "status": "COMPLETE", "pcr": {...}, ... }      (single-file flow finished)
+    -> { "status": "DRAFT",  "pcr": {...}, ... }        (chunked flow, awaiting review)
+    -> { "status": "SAVED",  "pcr": {...}, "saved_at": ... }
     -> { "status": "FAILED", "error": "..." }
 
-The first poll that finds Transcribe COMPLETED does the remaining work
-inline -- Bedrock field extraction, then the drug cross-check -- and writes
-the finished record, so every later poll is a cheap DynamoDB read. That
-whole tail runs in a few seconds, well inside API Gateway's 30s ceiling;
-the transcription wait, which is the part that blows the ceiling, happened
-across earlier polls.
+Two capture paths land here. The single-file flow (POST /pcr/generate ->
+this handler polls Transcribe) is the original: the first poll that finds
+Transcribe COMPLETED does the remaining work inline -- Bedrock field
+extraction, then the drug cross-check -- and writes the finished record, so
+every later poll is a cheap DynamoDB read. That tail runs in a few seconds,
+well inside API Gateway's 30s ceiling; the transcription wait, which is the
+part that blows the ceiling, happened across earlier polls.
+
+The chunked live-transcription flow (chunk.py -> live.py -> finalize.py)
+never enters the branch below -- it arrives already in DRAFT or SAVED --
+but it reads back through this same endpoint, which is what the saved-PCR
+detail screen calls.
 
 The cross-check is the piece that makes this one platform instead of four
 demos: mentioning two drugs out loud during the narration surfaces a
 contraindication in the PCR itself, using the same table and the same rules
-as the standalone /drug/check-interaction endpoint.
+as the standalone /drug/check-interaction endpoint. It lives in
+common/pcr.py so this path and finalize.py can't drift.
 """
 import json
 import os
 import time
 import boto3
 from common.audit import log_audit_event
-from common.drugs import check_interactions
+from common.pcr import cross_check, extract_structured_pcr
 from common.responses import ok, error, get_user_id
 
 transcribe = boto3.client("transcribe")
-bedrock = boto3.client("bedrock-runtime")
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
 ENCOUNTERS_TABLE = os.environ.get("ENCOUNTERS_TABLE_NAME", "ems-copilot-encounters")
 AUDIO_BUCKET = os.environ["AUDIO_BUCKET_NAME"]
-BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "amazon.nova-pro-v1:0")
 
 encounters_table = dynamodb.Table(ENCOUNTERS_TABLE)
 
-PCR_EXTRACTION_PROMPT = """You are assisting an EMT by converting a spoken \
-patient encounter narration into a structured Patient Care Report (PCR).
+# States the pipeline has already finished with, in one way or another --
+# read them straight back instead of looking for a Transcribe job.
+SETTLED_STATUSES = ("COMPLETE", "DRAFT", "SAVED")
 
-Extract the following fields from the transcript below. If a field was not \
-mentioned, use null -- do not guess or invent clinical information.
 
-Return ONLY valid JSON with this shape:
-{{
-  "chief_complaint": string | null,
-  "vitals": {{"bp": string|null, "hr": string|null, "rr": string|null, "spo2": string|null, "gcs": string|null}},
-  "interventions": [string],
-  "medications_administered": [{{"name": string, "dose": string|null, "route": string|null}}],
-  "patient_medications": [string],
-  "narrative_summary": string
-}}
-
-"medications_administered" is what the EMT gave on this call. \
-"patient_medications" is what the patient reports already taking (home \
-medications, other providers' doses) -- list the drug names only. Both \
-matter: interactions run across the two lists combined.
-
-Transcript:
-\"\"\"
-{transcript}
-\"\"\"
-"""
+def _int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _fetch_transcript(transcript_key: str) -> str:
@@ -73,44 +62,18 @@ def _fetch_transcript(transcript_key: str) -> str:
     return result["results"]["transcripts"][0]["transcript"]
 
 
-def _extract_structured_pcr(transcript: str) -> dict:
-    # Converse instead of invoke_model: it's the provider-agnostic Bedrock
-    # API, so swapping BEDROCK_MODEL_ID between vendors is a parameter
-    # change rather than a rewrite of the request body. temperature 0
-    # because this is extraction -- we want the same transcript to produce
-    # the same PCR, not a creative variation on it.
-    resp = bedrock.converse(
-        modelId=BEDROCK_MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": PCR_EXTRACTION_PROMPT.format(transcript=transcript)}]}],
-        inferenceConfig={"maxTokens": 2000, "temperature": 0},
-    )
-    text = "".join(b.get("text", "") for b in resp["output"]["message"]["content"])
-    # Bedrock may wrap JSON in prose/code fences despite instructions -- extract defensively.
-    start, end = text.find("{"), text.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError("Model did not return JSON")
-    return json.loads(text[start:end + 1])
-
-
-def _drugs_mentioned(structured: dict) -> list[str]:
-    """Every drug name in the PCR, from both what we gave and what the
-    patient is already on. De-duplicated, order preserved so the flags read
-    in the order the EMT said them."""
-    names = []
-    for med in structured.get("medications_administered") or []:
-        name = (med or {}).get("name") if isinstance(med, dict) else med
-        if name:
-            names.append(str(name).strip())
-    for name in structured.get("patient_medications") or []:
-        if name:
-            names.append(str(name).strip())
-
-    seen, unique = set(), []
-    for name in names:
-        if name.lower() not in seen:
-            seen.add(name.lower())
-            unique.append(name)
-    return unique
+def _read_back(record: dict) -> dict:
+    return {
+        "encounter_id": record["encounter_id"],
+        "status": record.get("status"),
+        "pcr": record.get("structured_pcr"),
+        "transcript": record.get("transcript"),
+        "interaction_flags": record.get("interaction_flags", []),
+        "crew_notes": record.get("crew_notes"),
+        "capture_mode": record.get("capture_mode", "SINGLE"),
+        "created_at": _int(record.get("created_at")),
+        "saved_at": _int(record.get("saved_at")) or None,
+    }
 
 
 def handler(event, context):
@@ -123,22 +86,28 @@ def handler(event, context):
     record = encounters_table.get_item(Key={"encounter_id": encounter_id}).get("Item")
     if not record:
         return error(f"No encounter {encounter_id}", status=404)
+    if record.get("created_by") not in (user_id, None):
+        return error("Not your encounter", status=403)
 
-    # Terminal states: just read it back.
-    if record.get("status") == "COMPLETE":
+    status = record.get("status")
+
+    if status in SETTLED_STATUSES:
         log_audit_event(
             user_id=user_id, action="READ", encounter_id=encounter_id,
-            resource="encounters.pcr", payload={"status": "COMPLETE"}, source_ip=source_ip,
+            resource="encounters.pcr", payload={"status": status}, source_ip=source_ip,
         )
-        return ok({
-            "encounter_id": encounter_id,
-            "status": "COMPLETE",
-            "pcr": record.get("structured_pcr"),
-            "transcript": record.get("transcript"),
-            "interaction_flags": record.get("interaction_flags", []),
-        })
-    if record.get("status") == "FAILED":
+        return ok(_read_back(record))
+    if status == "FAILED":
         return ok({"encounter_id": encounter_id, "status": "FAILED", "error": record.get("error")})
+    if status == "EXTRACTING":
+        # finalize.py handed the Bedrock call to an async worker; the client
+        # is polling here until it lands.
+        return ok({"encounter_id": encounter_id, "status": "EXTRACTING"})
+    if status == "RECORDING":
+        # Chunked capture in progress; GET /pcr/{id}/live is the right poll
+        # target for this one, not this handler.
+        return ok({"encounter_id": encounter_id, "status": "RECORDING",
+                   "chunk_count": len(record.get("chunks") or {})})
 
     job_name = record.get("transcribe_job_name")
     if not job_name:
@@ -159,22 +128,14 @@ def handler(event, context):
     # COMPLETED -- finish the pipeline.
     try:
         transcript = _fetch_transcript(record["transcript_s3_key"])
-        structured = _extract_structured_pcr(transcript)
+        structured = extract_structured_pcr(transcript)
     except Exception as e:  # noqa: BLE001 -- surface pipeline errors to the app
         record.update({"status": "FAILED", "error": str(e)})
         encounters_table.put_item(Item=record)
         return ok({"encounter_id": encounter_id, "status": "FAILED", "error": str(e)}, status=200)
 
-    # Cross-check every drug the narration mentioned against the same drug
-    # reference table the standalone endpoint uses. Best-effort: a lookup
-    # failure must not cost the EMT the PCR they just dictated.
-    drugs = _drugs_mentioned(structured)
-    interaction_flags = []
+    drugs, interaction_flags = cross_check(structured)
     if len(drugs) >= 2:
-        try:
-            interaction_flags = check_interactions(drugs)
-        except Exception:  # noqa: BLE001
-            interaction_flags = []
         log_audit_event(
             user_id=user_id,
             action="DRUG_INTERACTION_CHECK",

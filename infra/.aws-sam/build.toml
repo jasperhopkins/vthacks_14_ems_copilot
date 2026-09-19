@@ -7,7 +7,7 @@ architecture = "x86_64"
 handler = "app.handler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["PcrFunction", "PcrUploadUrlFunction", "PcrStatusFunction"]
+functions = ["PcrFunction", "PcrChunkFunction", "PcrLiveFunction", "PcrFinalizeFunction", "PcrCommitFunction", "PcrListFunction", "PcrUploadUrlFunction", "PcrStatusFunction"]
 
 [function_build_definitions.a650f603-acc0-4fbe-ada3-d3f8065545b1]
 codeuri = "/home/jasperh/Desktop/vthacks_14/ems-copilot/infra/src/protocol"

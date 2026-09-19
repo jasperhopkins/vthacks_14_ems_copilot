@@ -36,6 +36,7 @@ Globals:
     Environment:
       Variables:
         ENCOUNTERS_TABLE_NAME: !Ref EncountersTable
+        ENCOUNTERS_BY_USER_INDEX: ByUserSaved
         AUDIT_TABLE_NAME: !Ref AuditLogTable
         PROTOCOL_TABLE_NAME: !Ref ProtocolTable
         DRUG_TABLE_NAME: !Ref DrugReferenceTable
@@ -112,6 +113,76 @@ Resources:
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+        # SRP is the better flow on paper -- the password never leaves the
+        # device -- but it's unusable here: amazon-cognito-identity-js does
+        # SRP in pure JS, and its two 3072-bit modPow operations cost ~300ms
+        # on V8 *with* a JIT. Hermes has none, so sign-in froze the UI for
+        # tens of seconds. USER_PASSWORD_AUTH sends the password to Cognito
+        # over TLS instead and returns in well under a second. Revisit with
+        # a native crypto module if this ever leaves hackathon scope --
+        # see docs/HIPAA_NOTES.md.
+        - ALLOW_USER_PASSWORD_AUTH
+
+  # ---------------------------------------------------------------------
+  # Identity pool: the ONLY thing in this stack that hands real AWS
+  # credentials to the device.
+  #
+  # Live transcription needs it. Transcribe's streaming API is a WebSocket
+  # that the caller signs with SigV4, and only the phone can sign it --
+  # there is no way to proxy a continuous PCM stream through API Gateway +
+  # Lambda, which are request/response. So the app trades its Cognito ID
+  # token for temporary credentials here.
+  #
+  # Those credentials are deliberately near-useless for anything else: the
+  # authenticated role below grants exactly one action, on a service that
+  # stores nothing. It cannot touch DynamoDB, S3, or Bedrock -- every path
+  # to patient data still goes through API Gateway's JWT authorizer and the
+  # Lambda role. Unauthenticated identities are off, so a caller must
+  # already hold a valid user-pool token to get anything at all.
+  # See docs/HIPAA_NOTES.md item 8 before changing any of this.
+  # ---------------------------------------------------------------------
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub "ems_copilot_${Stage}"
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+          ServerSideTokenCheck: true
+
+  TranscribeStreamingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: cognito-identity.amazonaws.com }
+            Action: "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              # Without BOTH conditions this role would be assumable by any
+              # Cognito identity in any account, not just ours.
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": authenticated
+      Policies:
+        - PolicyName: TranscribeStreamOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: StreamingTranscriptionOnly
+                Effect: Allow
+                Action: [transcribe:StartStreamTranscriptionWebSocket]
+                Resource: "*"
+
+  IdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt TranscribeStreamingRole.Arn
 
   # ---------------------------------------------------------------------
   # API Gateway (HTTP API) with a Cognito JWT authorizer on every route.
@@ -145,9 +216,42 @@ Resources:
       AttributeDefinitions:
         - AttributeName: encounter_id
           AttributeType: S
+        - AttributeName: created_by
+          AttributeType: S
+        - AttributeName: saved_at
+          AttributeType: N
       KeySchema:
         - AttributeName: encounter_id
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        # "My PCRs, newest first." Deliberately SPARSE: saved_at is written
+        # only by POST /pcr/{id}/commit, so in-flight recordings, drafts the
+        # medic never accepted, and failed transcriptions are physically
+        # absent from this index rather than filtered out of it -- the list
+        # screen cannot accidentally show an unreviewed PCR.
+        #
+        # Projection is INCLUDE, not ALL: every encounter item carries a
+        # full transcript, and ALL would duplicate all of them into the
+        # index for a list view that only renders a one-line summary. The
+        # projected attributes are the flat ones written by
+        # common/pcr.py:build_summary_attrs (a GSI cannot project a nested
+        # path, which is why they are flat in the first place).
+        - IndexName: ByUserSaved
+          KeySchema:
+            - AttributeName: created_by
+              KeyType: HASH
+            - AttributeName: saved_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - summary_chief_complaint
+              - summary_meds
+              - patient_label
+              - flag_count
+              - search_text
+              - created_at
+              - capture_mode
       SSESpecification:
         SSEEnabled: true
         SSEType: KMS
@@ -324,6 +428,20 @@ Resources:
                   - !GetAtt EncountersTable.Arn
                   - !GetAtt ProtocolTable.Arn
                   - !GetAtt DrugReferenceTable.Arn
+              # UpdateItem is scoped to the encounters table alone, not
+              # folded into the statement above, so the protocol and drug
+              # reference tables stay read-only to these functions.
+              # Chunked capture needs it: concurrent chunk uploads write
+              # sibling keys of one DynamoDB map, and a read-modify-write
+              # PutItem would drop whichever landed in between.
+              - Sid: EncountersUpdate
+                Effect: Allow
+                Action: [dynamodb:UpdateItem]
+                Resource: !GetAtt EncountersTable.Arn
+              - Sid: EncountersIndexQuery
+                Effect: Allow
+                Action: [dynamodb:Query]
+                Resource: !Sub "${EncountersTable.Arn}/index/*"
               - Sid: AuditAppendOnly
                 Effect: Allow
                 Action: [dynamodb:PutItem]   # deliberately no Update/Delete
@@ -346,6 +464,15 @@ Resources:
                 Effect: Allow
                 Action: [transcribe:StartTranscriptionJob, transcribe:GetTranscriptionJob]
                 Resource: "*"
+              # Extraction is moved off the request path by invoking the
+              # finalize function again asynchronously -- see the docstring
+              # in src/pcr/finalize.py. Scoped by name pattern rather than
+              # !GetAtt on the function, which would be a circular
+              # dependency (function -> role -> function).
+              - Sid: SelfInvokeForAsyncExtraction
+                Effect: Allow
+                Action: [lambda:InvokeFunction]
+                Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-*"
               - Sid: BedrockInvoke
                 Effect: Allow
                 Action: [bedrock:InvokeModel]
@@ -376,6 +503,96 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /pcr/generate
             Method: POST
+
+  # ---- Chunked live transcription (chunk -> live -> finalize) --------
+  # Expo Go cannot hand us raw PCM frames, so Transcribe's streaming API is
+  # off the table; the app records short consecutive clips instead and the
+  # transcript grows a chunk at a time. See src/pcr/chunk.py.
+  PcrChunkFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: chunk.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        ChunkApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/stream-chunk
+            Method: POST
+
+  PcrLiveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: live.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        LiveApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/{encounter_id}/live
+            Method: GET
+
+  PcrFinalizeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: finalize.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      # Runs both sides of the split: the fast API call, and the async
+      # worker invocation that actually calls Bedrock. The worker is this
+      # same function re-invoked via context.function_name, so it needs
+      # room for a long transcript -- well past the API's 30s ceiling,
+      # which is the whole reason for the split.
+      Timeout: 300
+      Events:
+        FinalizeApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/finalize
+            Method: POST
+
+  # ---- The durable PCR store ------------------------------------------
+  PcrCommitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: records.commit_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        CommitApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/{encounter_id}/commit
+            Method: POST
+
+  # Routed as the static /pcr/saved rather than a query flag on
+  # /pcr/{encounter_id}: HTTP API route selection prefers the route with
+  # more static segments, so this wins over the path-variable route without
+  # ambiguity.
+  PcrListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: records.list_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/saved
+            Method: GET
 
   PcrUploadUrlFunction:
     Type: AWS::Serverless::Function
@@ -478,6 +695,9 @@ Outputs:
     Value: !Ref UserPool
   UserPoolClientId:
     Value: !Ref UserPoolClient
+  IdentityPoolId:
+    Description: Cognito identity pool -- put this in mobile/src/config.js
+    Value: !Ref IdentityPool
   AudioBucketName:
     Value: !Ref AudioBucket
   KmsKeyArn:

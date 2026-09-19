@@ -114,6 +114,50 @@ description of what's built here, not "HIPAA compliant."
 6. **Comprehend Medical eligibility and the exact Bedrock model's BAA
    coverage were not independently re-verified against AWS's live list**
    in this scaffolding pass — see the table above.
+7. **Sign-in uses `USER_PASSWORD_AUTH`, not SRP.** The app sends the
+   password to Cognito inside TLS rather than proving knowledge of it
+   without transmitting it. This was a deliberate performance trade:
+   `amazon-cognito-identity-js` implements SRP in pure JavaScript, and its
+   two 3072-bit modular exponentiations cost ~150ms each on a JIT-ed V8 —
+   on Hermes (no JIT, and running on the UI thread) sign-in blocked the app
+   for tens of seconds. Both flows are enabled server-side
+   (`ExplicitAuthFlows` in `template.yaml`), so moving back to SRP is a
+   client-only change: add a native crypto module such as
+   `react-native-quick-crypto` and restore the SDK path. That requires an
+   EAS development build — it cannot run in Expo Go. Do this before real
+   PHI, alongside making MFA required (item 1); note the current client
+   also has no MFA-challenge branch, so it would need one anyway.
+
+8. **Live transcription hands the device real AWS credentials, and sends
+   audio straight to Transcribe.** This is the one place the phone holds
+   anything beyond a Cognito ID token. Amazon Transcribe's streaming API
+   is a SigV4-signed WebSocket, and a continuous audio stream cannot be
+   proxied through API Gateway + Lambda, so the app trades its ID token at
+   a Cognito identity pool (`IdentityPool` in `template.yaml`) for
+   temporary credentials and signs the connection itself. What that
+   changes, concretely:
+
+   - The credentials are scoped to exactly one action
+     (`transcribe:StartStreamTranscriptionWebSocket`, see
+     `TranscribeStreamingRole`) on a service that persists nothing. They
+     cannot reach DynamoDB, S3 or Bedrock. Unauthenticated identities are
+     disabled, so a valid user-pool token is required to get them at all.
+   - **On this path the audio never lands in our S3 bucket**, so it is not
+     covered by the bucket's CMK encryption or its 7-day lifecycle expiry.
+     It goes device -> Transcribe over TLS and is not retained by us at
+     all. That is arguably better for PHI minimization, but it is a
+     different story to tell an auditor than "encrypted at rest with our
+     key," and it means there is no audio artifact to produce later.
+   - **The backend takes the transcript from the client.** `/pcr/finalize`
+     records what the device sends rather than deriving it from audio it
+     processed itself. The audit trail still records who submitted it and
+     hashes the payload, but the chain of custody from microphone to
+     transcript now runs through the device, not through our stack.
+   - The older chunked path (`/pcr/stream-chunk` -> `/pcr/{id}/live`) is
+     still deployed and still routes audio through S3 with the CMK, and it
+     needs no identity pool. If the credential exposure above is
+     unacceptable for a given deployment, that is the fallback — delete
+     the identity pool and point the app back at it.
 
 ## For the hackathon demo itself
 

@@ -4,7 +4,6 @@ version = 0.1
 stack_name = "ems-copilot-dev"
 resolve_s3 = true
 s3_prefix = "ems-copilot-dev"
-region = "us-east-1"          # HIPAA-eligible region -- see docs/HIPAA_NOTES.md
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 # This line wins over the Default: in template.yaml, and CloudFormation also

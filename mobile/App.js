@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, Text, Button, TextInput, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, Button, TextInput, StyleSheet, SafeAreaView, ActivityIndicator } from "react-native";
 
 import { login } from "./src/api/auth";
 import PcrScreen from "./src/screens/PcrScreen";
+import SavedPcrsScreen from "./src/screens/SavedPcrsScreen";
+import PcrDetailScreen from "./src/screens/PcrDetailScreen";
 import ProtocolScreen from "./src/screens/ProtocolScreen";
 import TranslateScreen from "./src/screens/TranslateScreen";
 import DrugScreen from "./src/screens/DrugScreen";
@@ -15,23 +17,46 @@ function LoginScreen({ navigation, setLoggedIn }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   async function submit() {
+    setBusy(true);
+    setError(null);
     try {
       await login(username, password);
       setLoggedIn(true);
       navigation.replace("Home");
     } catch (e) {
       setError(e.message || "Login failed");
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>EMS Copilot</Text>
-      <TextInput style={styles.input} placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Log In" onPress={submit} />
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        editable={!busy}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        editable={!busy}
+        onSubmitEditing={submit}
+      />
+      <Button title={busy ? "Signing in..." : "Log In"} onPress={submit} disabled={busy || !username || !password} />
+      {busy && <ActivityIndicator style={{ marginTop: 12 }} />}
       {error && <Text style={styles.error}>{error}</Text>}
       <Text style={styles.hint}>
         Create a user first via `aws cognito-idp admin-create-user` (see infra/README.md).
@@ -47,6 +72,7 @@ function HomeScreen({ navigation, encounterId }) {
       <Text style={styles.hint}>Encounter: {encounterId}</Text>
       <View style={styles.menu}>
         <Button title="Voice-to-PCR" onPress={() => navigation.navigate("PCR")} />
+        <Button title="My Saved PCRs" onPress={() => navigation.navigate("SavedPcrs")} />
         <Button title="Protocol / Dosage Assistant" onPress={() => navigation.navigate("Protocol")} />
         <Button title="Medical Translator" onPress={() => navigation.navigate("Translate")} />
         <Button title="Drug Reference & Interactions" onPress={() => navigation.navigate("Drug")} />
@@ -71,8 +97,14 @@ export default function App() {
           {(props) => <HomeScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
         <Stack.Screen name="PCR" options={{ title: "Voice-to-PCR" }}>
-          {() => <PcrScreen encounterId={encounterId} />}
+          {(props) => <PcrScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
+        <Stack.Screen name="SavedPcrs" options={{ title: "My PCRs" }} component={SavedPcrsScreen} />
+        <Stack.Screen
+          name="PcrDetail"
+          component={PcrDetailScreen}
+          options={({ route }) => ({ title: route.params?.title || "Patient Care Report" })}
+        />
         <Stack.Screen name="Protocol" options={{ title: "Protocol / Dosage" }}>
           {() => <ProtocolScreen encounterId={encounterId} />}
         </Stack.Screen>

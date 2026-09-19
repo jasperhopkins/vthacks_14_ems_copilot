@@ -23,7 +23,46 @@ export const api = {
   generatePcr: (s3Key, encounterId) =>
     request("/pcr/generate", { method: "POST", body: { s3_key: s3Key, encounter_id: encounterId } }),
   // Poll target -- generatePcr only starts the job (see src/pcr/status.py).
+  // Doubles as the detail view for a saved PCR.
   getPcr: (encounterId) => request(`/pcr/${encodeURIComponent(encounterId)}`),
+
+  // --- Chunked capture (fallback path) --------------------------------
+  // Not used by the app any more: PcrScreen streams to Transcribe
+  // directly. Kept because the endpoints are deployed and are the only
+  // capture path that works without the identity pool.
+  sendChunk: (encounterId, s3Key, seq) =>
+    request("/pcr/stream-chunk", { method: "POST", body: { encounter_id: encounterId, s3_key: s3Key, seq } }),
+  getLiveTranscript: (encounterId) =>
+    request(`/pcr/${encodeURIComponent(encounterId)}/live`),
+
+  // Hands the finished transcript to Bedrock extraction. Returns 202
+  // immediately (the model call runs asynchronously -- a long transcript
+  // would blow API Gateway's 30s ceiling), so poll getPcr until the status
+  // is DRAFT. Omit `transcript` to use the chunked path's stitched text.
+  finalizePcr: (encounterId, transcript) =>
+    request("/pcr/finalize", {
+      method: "POST",
+      body: { encounter_id: encounterId, transcript },
+    }),
+
+  // --- The durable PCR store ------------------------------------------
+  // Nothing appears in listSavedPcrs until commitPcr files it.
+  commitPcr: (encounterId, pcr, crewNotes) =>
+    request(`/pcr/${encodeURIComponent(encounterId)}/commit`, {
+      method: "POST",
+      body: { pcr, crew_notes: crewNotes },
+    }),
+  listSavedPcrs: ({ q, flagged, from, to, limit, cursor } = {}) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (flagged) params.set("flagged", "true");
+    if (from) params.set("from", String(from));
+    if (to) params.set("to", String(to));
+    if (limit) params.set("limit", String(limit));
+    if (cursor) params.set("cursor", cursor);
+    const qs = params.toString();
+    return request(`/pcr/saved${qs ? `?${qs}` : ""}`);
+  },
   queryProtocol: (query, weightKg, encounterId) =>
     request("/protocol/query", {
       method: "POST",
