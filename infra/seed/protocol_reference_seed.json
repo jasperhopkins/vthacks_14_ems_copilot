@@ -1,0 +1,46 @@
+[
+  {
+    "protocol_id": "PROT-ANAPHYLAXIS-01",
+    "title": "Anaphylaxis (Adult)",
+    "indications": "Suspected anaphylaxis: rash/hives + respiratory distress or hypotension after allergen exposure.",
+    "steps": [
+      "Administer epinephrine 0.3-0.5 mg IM (1:1000), lateral thigh.",
+      "High-flow oxygen, position of comfort or supine if hypotensive.",
+      "IV access, consider fluid bolus if hypotensive.",
+      "Administer diphenhydramine 25-50 mg IV/IM if available.",
+      "Repeat epinephrine q5-15min if no improvement.",
+      "Transport, consider ALS intercept if BLS."
+    ],
+    "weight_based_dosage_field": "epinephrine",
+    "reference_note": "SEED/DEMO protocol only -- replace with your agency's actual medical-direction-approved protocols before any real use."
+  },
+  {
+    "protocol_id": "PROT-OPIOID-OD-01",
+    "title": "Suspected Opioid Overdose",
+    "indications": "Respiratory depression/apnea with suspected opioid use (pinpoint pupils, track marks, scene evidence).",
+    "steps": [
+      "Support airway/ventilation first -- BVM as needed.",
+      "Administer naloxone 0.4-2 mg IV/IM/IN.",
+      "Re-assess respiratory rate q2-3min, repeat naloxone as needed.",
+      "Be prepared for combative patient on reversal -- opioid withdrawal.",
+      "Transport; do not leave scene even if patient refuses after reversal."
+    ],
+    "weight_based_dosage_field": "naloxone",
+    "reference_note": "SEED/DEMO protocol only."
+  },
+  {
+    "protocol_id": "PROT-CHEST-PAIN-01",
+    "title": "Chest Pain / Suspected ACS",
+    "indications": "Chest pain/pressure, suspected cardiac origin.",
+    "steps": [
+      "12-lead ECG as soon as possible, transmit to receiving facility if capable.",
+      "Aspirin 162-325 mg PO chewed if no contraindication.",
+      "Oxygen only if SpO2 < 94%.",
+      "IV access.",
+      "Nitroglycerin per local protocol if SBP > 100 and no PDE5 inhibitor use.",
+      "Transport to PCI-capable facility if STEMI criteria met."
+    ],
+    "weight_based_dosage_field": "aspirin",
+    "reference_note": "SEED/DEMO protocol only."
+  }
+]

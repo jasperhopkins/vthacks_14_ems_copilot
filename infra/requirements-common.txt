@@ -1,0 +1,5 @@
+# Shared dependency notes for local dev / linting.
+# Each Lambda's CodeUri folder can have its own requirements.txt if you add
+# third-party deps beyond boto3 (which ships in the Lambda Python runtime
+# already, so it's omitted from per-function requirements.txt on purpose).
+boto3>=1.34

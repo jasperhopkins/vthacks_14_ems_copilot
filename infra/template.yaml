@@ -1,0 +1,484 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  EMS Copilot -- voice-to-PCR, protocol/dosage assistant, medical translator,
+  and drug interaction reference, built on HIPAA-eligible AWS services.
+  See docs/HIPAA_NOTES.md before this touches any real patient data: eligible
+  infrastructure + a signed BAA is necessary but not sufficient for actual
+  HIPAA compliance.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+  BedrockModelId:
+    Type: String
+    # Handlers call Bedrock through the Converse API, so this can be any
+    # Converse-capable text model without a code change.
+    # Nova Pro was picked by evaluating candidates on realistic ASR-style
+    # transcripts (infra/tests/eval_models.py): it was the cheapest model
+    # that never fabricated a vital, dose, or intervention. nova-2-lite
+    # invented interventions on a patient-refusal transcript, so don't
+    # "upgrade" to it without re-running that eval. Anthropic models
+    # on Bedrock need a use-case form submitted per account and are
+    # inference-profile-only (the "us." prefix); Nova is AWS first-party
+    # and needs neither. See what this account can invoke with:
+    #   aws bedrock list-foundation-models
+    Default: amazon.nova-pro-v1:0
+    Description: Must be a Bedrock model confirmed BAA-covered before real PHI use.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 60          # Transcribe polling in pcr/app.py needs headroom
+    MemorySize: 256
+    Tracing: Active       # X-Ray -- extra audit/debug trail, not a substitute for the audit table
+    Environment:
+      Variables:
+        ENCOUNTERS_TABLE_NAME: !Ref EncountersTable
+        AUDIT_TABLE_NAME: !Ref AuditLogTable
+        PROTOCOL_TABLE_NAME: !Ref ProtocolTable
+        DRUG_TABLE_NAME: !Ref DrugReferenceTable
+        AUDIO_BUCKET_NAME: !Ref AudioBucket
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        KMS_KEY_ARN: !GetAtt EmsCopilotKmsKey.Arn
+
+Resources:
+
+  # ---------------------------------------------------------------------
+  # Shared code layer -- common/audit.py and common/responses.py are used
+  # by every function (see the "from common.audit import ..." imports).
+  # Packaged as a layer rather than duplicated per-function so the audit
+  # logging logic has exactly one implementation to review/trust.
+  # ---------------------------------------------------------------------
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "ems-copilot-common-${Stage}"
+      ContentUri: layers/common/
+      CompatibleRuntimes: [python3.12]
+    # No BuildMethod on purpose. ContentUri already has the python/ prefix
+    # Lambda requires, and BuildMethod: python3.12 nests it a second time
+    # (/opt/python/python/common), which import can't see. Add one back
+    # only if this layer ever gains third-party deps, and drop the python/
+    # directory from the source tree at the same time.
+
+  # ---------------------------------------------------------------------
+  # Encryption -- one CMK for everything below. Using a customer-managed
+  # key (not the AWS-managed default) is what lets you control/rotate/
+  # revoke access independently of AWS, which auditors expect to see.
+  # ---------------------------------------------------------------------
+  EmsCopilotKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: CMK for EMS Copilot PHI-adjacent data at rest
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAccountAdmin
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+
+  # ---------------------------------------------------------------------
+  # Auth -- every API call must carry a Cognito-issued JWT. This is what
+  # makes "who did what" in the audit log meaningful (see common/responses.py
+  # get_user_id, which pulls the Cognito `sub` out of the verified claims).
+  # ---------------------------------------------------------------------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "ems-copilot-${Stage}"
+      MfaConfiguration: "OPTIONAL"   # flip to REQUIRED before this is anything but a demo
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      AutoVerifiedAttributes: [email]
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub "ems-copilot-mobile-${Stage}"
+      GenerateSecret: false     # public client (mobile app) -- no secret to leak
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  # ---------------------------------------------------------------------
+  # API Gateway (HTTP API) with a Cognito JWT authorizer on every route.
+  # ---------------------------------------------------------------------
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowOrigins: ["*"]      # tighten before anything but a hackathon demo
+        AllowHeaders: ["Authorization", "Content-Type"]
+        AllowMethods: ["GET", "POST", "OPTIONS"]
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+            IdentitySource: "$request.header.Authorization"
+        DefaultAuthorizer: CognitoAuthorizer
+
+  # ---------------------------------------------------------------------
+  # DynamoDB tables
+  # ---------------------------------------------------------------------
+  EncountersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "ems-copilot-encounters-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: encounter_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: encounter_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref EmsCopilotKmsKey
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Append-only by IAM contract: see EncounterFunctionsRole below, which is
+  # granted PutItem/GetItem/Query but explicitly NOT UpdateItem/DeleteItem
+  # on this table.
+  AuditLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "ems-copilot-audit-log-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: encounter_id
+          AttributeType: S
+        - AttributeName: sort_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: encounter_id
+          KeyType: HASH
+        - AttributeName: sort_key
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref EmsCopilotKmsKey
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ProtocolTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "ems-copilot-protocols-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: protocol_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: protocol_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref EmsCopilotKmsKey
+
+  DrugReferenceTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "ems-copilot-drug-reference-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: drug_name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: drug_name
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref EmsCopilotKmsKey
+
+  # ---------------------------------------------------------------------
+  # S3 for raw audio uploads (source for Transcribe). Encrypted, versioned,
+  # public access fully blocked, short lifecycle so raw audio (highest-
+  # sensitivity artifact in this whole system) doesn't linger.
+  # ---------------------------------------------------------------------
+  AudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "ems-copilot-audio-${Stage}-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref EmsCopilotKmsKey
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireRawAudio
+            Status: Enabled
+            ExpirationInDays: 7   # tune for your real retention policy
+
+  # ---------------------------------------------------------------------
+  # CloudTrail -- account/API-level audit trail, distinct from (and in
+  # addition to) the application-level AuditLogTable. This one is your
+  # evidence of *infrastructure* access (who changed IAM, who read S3
+  # directly, etc); the DynamoDB one is your evidence of *application*
+  # actions (who looked at which patient encounter).
+  # ---------------------------------------------------------------------
+  CloudTrailBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "ems-copilot-cloudtrail-${Stage}-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref EmsCopilotKmsKey
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  CloudTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CloudTrailBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AWSCloudTrailAclCheck
+            Effect: Allow
+            Principal: { Service: cloudtrail.amazonaws.com }
+            Action: "s3:GetBucketAcl"
+            Resource: !GetAtt CloudTrailBucket.Arn
+          - Sid: AWSCloudTrailWrite
+            Effect: Allow
+            Principal: { Service: cloudtrail.amazonaws.com }
+            Action: "s3:PutObject"
+            Resource: !Sub "${CloudTrailBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+            Condition:
+              StringEquals: { "s3:x-amz-acl": "bucket-owner-full-control" }
+
+  EmsCopilotTrail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn: CloudTrailBucketPolicy
+    Properties:
+      TrailName: !Sub "ems-copilot-${Stage}"
+      S3BucketName: !Ref CloudTrailBucket
+      IsLogging: true
+      IsMultiRegionTrail: true
+      # CloudTrail rejects a multi-region trail that excludes global
+      # service events, and CloudFormation defaults this to false.
+      IncludeGlobalServiceEvents: true
+      EnableLogFileValidation: true   # cryptographic proof logs weren't altered
+      EventSelectors:
+        - ReadWriteType: All
+          IncludeManagementEvents: true
+
+  # ---------------------------------------------------------------------
+  # IAM -- one shared role for the application Lambdas. Deliberately
+  # NO UpdateItem/DeleteItem on the audit table: that's what makes it
+  # append-only in practice, not just in naming.
+  # ---------------------------------------------------------------------
+  EncounterFunctionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: EmsCopilotAppAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: EncountersReadWrite
+                Effect: Allow
+                Action: [dynamodb:PutItem, dynamodb:GetItem, dynamodb:Query, dynamodb:Scan]
+                Resource:
+                  - !GetAtt EncountersTable.Arn
+                  - !GetAtt ProtocolTable.Arn
+                  - !GetAtt DrugReferenceTable.Arn
+              - Sid: AuditAppendOnly
+                Effect: Allow
+                Action: [dynamodb:PutItem]   # deliberately no Update/Delete
+                Resource: !GetAtt AuditLogTable.Arn
+              - Sid: KmsUse
+                Effect: Allow
+                # DescribeKey: Transcribe validates OutputEncryptionKMSKeyId
+                # before it will start a job against an SSE-KMS bucket.
+                Action: [kms:Encrypt, kms:Decrypt, kms:GenerateDataKey, kms:DescribeKey]
+                Resource: !GetAtt EmsCopilotKmsKey.Arn
+              - Sid: S3Audio
+                Effect: Allow
+                Action: [s3:PutObject, s3:GetObject]
+                Resource: !Sub "${AudioBucket.Arn}/*"
+              - Sid: S3AudioBucket
+                Effect: Allow
+                Action: [s3:ListBucket]
+                Resource: !GetAtt AudioBucket.Arn
+              - Sid: TranscribeAccess
+                Effect: Allow
+                Action: [transcribe:StartTranscriptionJob, transcribe:GetTranscriptionJob]
+                Resource: "*"
+              - Sid: BedrockInvoke
+                Effect: Allow
+                Action: [bedrock:InvokeModel]
+                Resource: "*"
+              - Sid: ComprehendMedicalAccess
+                Effect: Allow
+                Action: [comprehendmedical:InferRxNorm, comprehendmedical:DetectEntitiesV2]
+                Resource: "*"
+              - Sid: TranslateAndPolly
+                Effect: Allow
+                Action: [translate:TranslateText, polly:SynthesizeSpeech]
+                Resource: "*"
+
+  # ---------------------------------------------------------------------
+  # Lambda functions
+  # ---------------------------------------------------------------------
+  PcrFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: app.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        GenerateApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/generate
+            Method: POST
+
+  PcrUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: upload_url.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        UploadUrlApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/upload-url
+            Method: GET
+
+  # Poll target for the PCR pipeline. Finishes the job (Bedrock extraction
+  # + drug cross-check) on the first poll that finds Transcribe done -- see
+  # the docstring in src/pcr/status.py for why this is split from generate.
+  PcrStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/pcr/
+      Handler: status.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        StatusApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /pcr/{encounter_id}
+            Method: GET
+
+  ProtocolFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/protocol/
+      Handler: app.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        QueryApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /protocol/query
+            Method: POST
+
+  TranslateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/translate/
+      Handler: app.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        TranslateApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /translate
+            Method: POST
+
+  DrugLookupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/drug/
+      Handler: app.lookup_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        LookupApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /drug/lookup
+            Method: POST
+
+  DrugInteractionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/drug/
+      Handler: app.interaction_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        InteractionApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /drug/check-interaction
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for the API -- put this in mobile/src/config.js
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  AudioBucketName:
+    Value: !Ref AudioBucket
+  KmsKeyArn:
+    Value: !GetAtt EmsCopilotKmsKey.Arn

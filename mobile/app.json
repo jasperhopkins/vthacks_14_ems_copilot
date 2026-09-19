@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "EMS Copilot",
+    "slug": "ems-copilot",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "EMS Copilot records patient encounter audio to generate a structured PCR."
+      }
+    },
+    "android": {
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
+    },
+    "extra": {
+      "note": "Use Expo Go (no Mac/Xcode needed) to demo: `expo start`, scan the QR code with the Expo Go app on any iPhone or Android device. EAS Build (cloud-based) is only needed for an installable/TestFlight binary."
+    },
+    "plugins": [
+      "expo-audio"
+    ]
+  }
+}

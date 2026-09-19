@@ -1,0 +1,19 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "ems-copilot-dev"
+resolve_s3 = true
+s3_prefix = "ems-copilot-dev"
+region = "us-east-1"          # HIPAA-eligible region -- see docs/HIPAA_NOTES.md
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+# This line wins over the Default: in template.yaml, and CloudFormation also
+# keeps a parameter's previous value when you simply omit it -- so changing
+# the template default alone does NOT change a deployed stack. Change the
+# model HERE. (`sam deploy --guided` wrote a since-retired Claude 3.5 model
+# into this line, which kept every Lambda calling a dead model.)
+parameter_overrides = "Stage=\"dev\" BedrockModelId=\"amazon.nova-pro-v1:0\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"

@@ -1,0 +1,195 @@
+[
+  {
+    "drug_name": "epinephrine",
+    "class": "Sympathomimetic / vasopressor",
+    "common_uses": [
+      "Anaphylaxis",
+      "Cardiac arrest",
+      "Severe asthma/bronchospasm"
+    ],
+    "adult_dose": "Anaphylaxis: 0.3-0.5 mg IM (1:1000), may repeat q5-15min. Cardiac arrest: 1 mg IV/IO (1:10,000) q3-5min.",
+    "pediatric_dose": "0.01 mg/kg IM (1:1000), max 0.3 mg per dose.",
+    "contraindicated_with": [
+      "propranolol",
+      "phenelzine"
+    ],
+    "interaction_notes": {
+      "propranolol": "Non-selective beta-blockade can cause unopposed alpha-adrenergic effects -- severe hypertension possible. Use with caution, consider glucagon as alternative if patient is on beta-blockers.",
+      "phenelzine": "MAOIs can potentiate pressor effects significantly -- risk of hypertensive crisis."
+    },
+    "notes": "This is a SEED/DEMO dataset for hackathon use only -- not medical-grade and not a substitute for your agency's actual protocols."
+  },
+  {
+    "drug_name": "propranolol",
+    "class": "Non-selective beta-blocker",
+    "common_uses": [
+      "Hypertension",
+      "Arrhythmia",
+      "Migraine prophylaxis (not an EMS field use)"
+    ],
+    "adult_dose": "Not typically field-administered by EMS; relevant here as a patient home medication that affects other drug choices.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [
+      "epinephrine"
+    ],
+    "interaction_notes": {
+      "epinephrine": "See epinephrine entry -- unopposed alpha effects risk."
+    },
+    "notes": "SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "naloxone",
+    "class": "Opioid antagonist",
+    "common_uses": [
+      "Opioid overdose / respiratory depression"
+    ],
+    "adult_dose": "0.4-2 mg IV/IM/IN, may repeat q2-3min up to 10 mg.",
+    "pediatric_dose": "0.1 mg/kg IV/IM/IN, max 2 mg per dose.",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "Can precipitate acute withdrawal in opioid-dependent patients -- titrate to adequate respiration, not full consciousness. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "aspirin",
+    "class": "Antiplatelet / NSAID",
+    "common_uses": [
+      "Suspected acute coronary syndrome / chest pain"
+    ],
+    "adult_dose": "162-325 mg PO (chewed), non-enteric coated preferred.",
+    "pediatric_dose": "Not indicated for pediatric field use.",
+    "contraindicated_with": [
+      "active gi bleed",
+      "aspirin allergy"
+    ],
+    "interaction_notes": {
+      "active gi bleed": "Increased bleeding risk -- withhold and consult medical control.",
+      "aspirin allergy": "Do not administer -- risk of anaphylaxis/bronchospasm."
+    },
+    "notes": "SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "albuterol",
+    "class": "Beta-2 agonist bronchodilator",
+    "common_uses": [
+      "Asthma",
+      "COPD exacerbation",
+      "Bronchospasm"
+    ],
+    "adult_dose": "2.5 mg nebulized, may repeat.",
+    "pediatric_dose": "2.5 mg nebulized (same as adult for most protocols; confirm local protocol for <2 years).",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "Can cause tachycardia/tremor -- monitor cardiac patients closely. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "nitroglycerin",
+    "class": "Nitrate / vasodilator",
+    "common_uses": [
+      "Chest pain / suspected ACS",
+      "CHF with pulmonary edema"
+    ],
+    "adult_dose": "0.4 mg SL q5min x3 as long as SBP stays above 100 mmHg.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [
+      "sildenafil",
+      "tadalafil"
+    ],
+    "interaction_notes": {
+      "sildenafil": "PDE5 inhibitor within 24h (48h for tadalafil) plus a nitrate can cause profound, refractory hypotension. Ask before giving nitro.",
+      "tadalafil": "Same PDE5 mechanism as sildenafil, longer window -- hold nitrates for 48h."
+    },
+    "notes": "SEED/DEMO dataset only -- not medical-grade and not a substitute for your agency's actual protocols."
+  },
+  {
+    "drug_name": "sildenafil",
+    "class": "PDE5 inhibitor",
+    "common_uses": [
+      "Erectile dysfunction",
+      "Pulmonary hypertension"
+    ],
+    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [
+      "nitroglycerin"
+    ],
+    "interaction_notes": {
+      "nitroglycerin": "See nitroglycerin entry -- refractory hypotension risk."
+    },
+    "notes": "SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "epi",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'epi' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "adrenaline",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'adrenaline' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "epipen",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'epipen' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "narcan",
+    "alias_of": "naloxone",
+    "notes": "Alias row: 'narcan' resolves to 'naloxone'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "nitro",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitro' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "ntg",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'ntg' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "nitrostat",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitrostat' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "asa",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'asa' resolves to 'aspirin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "baby aspirin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'baby aspirin' resolves to 'aspirin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "ventolin",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'ventolin' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "salbutamol",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'salbutamol' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "proventil",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'proventil' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "inderal",
+    "alias_of": "propranolol",
+    "notes": "Alias row: 'inderal' resolves to 'propranolol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "viagra",
+    "alias_of": "sildenafil",
+    "notes": "Alias row: 'viagra' resolves to 'sildenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "revatio",
+    "alias_of": "sildenafil",
+    "notes": "Alias row: 'revatio' resolves to 'sildenafil'. SEED/DEMO dataset only."
+  }
+]
