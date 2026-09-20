@@ -178,6 +178,9 @@ Every route sits behind the same Cognito JWT authorizer
 | `POST /pcr/{encounter_id}/commit` | `src/pcr/records.py:commit_handler` | `api.commitPcr` |
 | `GET /pcr/saved` | `src/pcr/records.py:list_handler` | `api.listSavedPcrs` |
 | `POST /protocol/query` | `src/protocol/app.py:handler` | `api.queryProtocol` |
+| `GET /protocol/list` | `src/protocol/browse.py:list_handler` | `api.listProtocols` |
+| `GET /protocol/{protocol_id}` | `src/protocol/browse.py:detail_handler` | `api.getProtocol` |
+| `GET /drug/list` | `src/drug/browse.py:list_handler` | `api.listDrugs` |
 | `POST /translate` | `src/translate/app.py:handler` | `api.translate` |
 | `POST /drug/lookup` | `src/drug/app.py:lookup_handler` | `api.lookupDrug` |
 | `POST /drug/check-interaction` | `src/drug/app.py:interaction_handler` | `api.checkInteraction` |
@@ -214,7 +217,8 @@ Expo app (Cognito-authenticated)
 | `infra/tests/smoke_test_pcr.py` | End-to-end pipeline test against a live stack (Polly-generated audio, real SRP login) |
 | `infra/tests/eval_models.py` | Model-selection harness; re-run before changing `BedrockModelId` |
 | `mobile/App.js` | Navigation shell + login |
-| `mobile/src/screens/*.js` | The 4 feature screens |
+| `mobile/src/screens/*.js` | The feature screens, incl. the browse + detail pairs |
+| `mobile/src/components/ui.js` | Shared browse controls (pills, segmented, cards, lists) |
 | `mobile/src/config.js` | **Fill this in from `sam deploy` outputs before running the app** |
 | `docs/HIPAA_NOTES.md` | Compliance posture, what's real vs. aspirational, service-by-service eligibility notes |
 | `infra/README.md` | Full deploy walkthrough |
@@ -287,6 +291,39 @@ endpoint is a four-file change:
 - **DrugReference** — PK `drug_name`, **lowercase**. `_normalize_drug_name`
   runs Comprehend Medical `InferRxNorm` then lowercases, so seed keys must
   be lowercase or every lookup misses.
+
+### Browsing the reference libraries
+
+- **Every library screen is browse-first, because searching a 71-guideline
+  table assumes you know what's in it.** `ProtocolScreen` and `DrugScreen`
+  each carry a `Segmented` mode switch: Ask/Browse and Formulary/Check
+  interaction. `SavedPcrsScreen` was already a scrollable list and is
+  unchanged.
+- **List and detail are separate calls on purpose.** The 71 protocol
+  records are ~400 KB in full because each carries verbatim steps,
+  assessment and safety text. `GET /protocol/list` projects only what a
+  card renders (`title`, `category`, `summary`, `step_count`,
+  `source_page`); `GET /protocol/{protocol_id}` fetches the rest when a
+  medic opens one. Don't "simplify" this by returning whole records from
+  the list.
+- **`GET /protocol/list` and `GET /protocol/{protocol_id}` coexist**
+  because HTTP APIs route the path with more literal segments first, so
+  "list" is never captured as a protocol id. Verified deployed: the two
+  routes resolve to different integrations.
+- **Browse handlers paginate the scan.** `scan(Limit=200)` elsewhere caps
+  items evaluated *per page*, not in total, so it silently returns a
+  partial table once the data outgrows a page. A browse list that quietly
+  omits guidelines is worse than a slow one — `_scan_all` follows
+  `LastEvaluatedKey`.
+- **`GET /drug/list` hides alias rows and attaches them to their target.**
+  The table stores field slang as its own rows so speech resolves, but a
+  formulary listing seven drugs and fifteen nicknames is noise; each card
+  carries its aliases instead, which doubles as "what do I call this on the
+  radio". Filtering in the app searches those aliases, so typing "narcan"
+  finds naloxone exactly as saying it would.
+- **Interaction flags render their `basis`.** A curated clinical rule and
+  one derived from RxClass classes say so differently on screen — they are
+  different levels of authority and must not read identically.
 
 ### Behaviors worth knowing before you edit
 

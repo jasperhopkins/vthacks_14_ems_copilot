@@ -63,6 +63,13 @@ export const api = {
     const qs = params.toString();
     return request(`/pcr/saved${qs ? `?${qs}` : ""}`);
   },
+  // --- Browsing the reference libraries -------------------------------
+  // The list calls return card-shaped rows only; the full protocol record
+  // is ~6 KB and there are 71 of them, so detail is a second request.
+  listProtocols: () => request("/protocol/list"),
+  getProtocol: (protocolId) => request(`/protocol/${encodeURIComponent(protocolId)}`),
+  listDrugs: () => request("/drug/list"),
+
   queryProtocol: (query, weightKg, encounterId) =>
     request("/protocol/query", {
       method: "POST",

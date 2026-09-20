@@ -16,7 +16,7 @@ architecture = "x86_64"
 handler = "app.handler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["ProtocolFunction"]
+functions = ["ProtocolFunction", "ProtocolListFunction", "ProtocolDetailFunction"]
 
 [function_build_definitions.864bc175-8e78-4346-9292-9887a99c3aac]
 codeuri = "/home/jasperh/Desktop/vthacks_14/ems-copilot/infra/src/translate"
@@ -34,6 +34,6 @@ architecture = "x86_64"
 handler = "app.lookup_handler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["DrugLookupFunction", "DrugInteractionFunction"]
+functions = ["DrugListFunction", "DrugLookupFunction", "DrugInteractionFunction"]
 
 [layer_build_definitions]

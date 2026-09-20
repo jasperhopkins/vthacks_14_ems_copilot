@@ -8,6 +8,8 @@ import PcrScreen from "./src/screens/PcrScreen";
 import SavedPcrsScreen from "./src/screens/SavedPcrsScreen";
 import PcrDetailScreen from "./src/screens/PcrDetailScreen";
 import ProtocolScreen from "./src/screens/ProtocolScreen";
+import ProtocolDetailScreen from "./src/screens/ProtocolDetailScreen";
+import DrugDetailScreen from "./src/screens/DrugDetailScreen";
 import TranslateScreen from "./src/screens/TranslateScreen";
 import DrugScreen from "./src/screens/DrugScreen";
 
@@ -105,15 +107,25 @@ export default function App() {
           component={PcrDetailScreen}
           options={({ route }) => ({ title: route.params?.title || "Patient Care Report" })}
         />
-        <Stack.Screen name="Protocol" options={{ title: "Protocol / Dosage" }}>
-          {() => <ProtocolScreen encounterId={encounterId} />}
+        <Stack.Screen name="Protocol" options={{ title: "Protocols" }}>
+          {(props) => <ProtocolScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
+        <Stack.Screen
+          name="ProtocolDetail"
+          component={ProtocolDetailScreen}
+          options={({ route }) => ({ title: route.params?.title || "Protocol" })}
+        />
         <Stack.Screen name="Translate" options={{ title: "Translator" }}>
           {() => <TranslateScreen encounterId={encounterId} />}
         </Stack.Screen>
         <Stack.Screen name="Drug" options={{ title: "Drug Reference" }}>
-          {() => <DrugScreen encounterId={encounterId} />}
+          {(props) => <DrugScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
+        <Stack.Screen
+          name="DrugDetail"
+          component={DrugDetailScreen}
+          options={({ route }) => ({ title: route.params?.title || "Drug" })}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

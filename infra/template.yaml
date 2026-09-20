@@ -642,6 +642,55 @@ Resources:
             Path: /protocol/query
             Method: POST
 
+  # Browse the protocol library rather than searching it. Static
+  # /protocol/list is declared alongside the greedy /protocol/{protocol_id};
+  # HTTP APIs route the more specific literal path first, so "list" is never
+  # swallowed as a protocol id.
+  ProtocolListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/protocol/
+      Handler: browse.list_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /protocol/list
+            Method: GET
+
+  ProtocolDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/protocol/
+      Handler: browse.detail_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        DetailApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /protocol/{protocol_id}
+            Method: GET
+
+  DrugListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/drug/
+      Handler: browse.list_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /drug/list
+            Method: GET
+
   TranslateFunction:
     Type: AWS::Serverless::Function
     Properties:

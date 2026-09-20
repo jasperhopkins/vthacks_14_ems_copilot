@@ -645,6 +645,69 @@ Resources:
             Method: POST
     Metadata:
       SamResourceId: ProtocolFunction
+  ProtocolListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ProtocolListFunction
+      Handler: browse.list_handler
+      Role:
+        Fn::GetAtt:
+        - EncounterFunctionsRole
+        - Arn
+      Layers:
+      - Ref: CommonLayer
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /protocol/list
+            Method: GET
+    Metadata:
+      SamResourceId: ProtocolListFunction
+  ProtocolDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ProtocolDetailFunction
+      Handler: browse.detail_handler
+      Role:
+        Fn::GetAtt:
+        - EncounterFunctionsRole
+        - Arn
+      Layers:
+      - Ref: CommonLayer
+      Events:
+        DetailApi:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /protocol/{protocol_id}
+            Method: GET
+    Metadata:
+      SamResourceId: ProtocolDetailFunction
+  DrugListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: DrugListFunction
+      Handler: browse.list_handler
+      Role:
+        Fn::GetAtt:
+        - EncounterFunctionsRole
+        - Arn
+      Layers:
+      - Ref: CommonLayer
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /drug/list
+            Method: GET
+    Metadata:
+      SamResourceId: DrugListFunction
   TranslateFunction:
     Type: AWS::Serverless::Function
     Properties:
