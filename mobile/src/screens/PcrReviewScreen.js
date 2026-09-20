@@ -16,6 +16,10 @@ import { api } from "../api/client";
 import PcrDocument from "../components/PcrDocument";
 import { colors, radius, space } from "../theme";
 
+// How long to wait for an extraction worker to produce a record before
+// calling it absent rather than slow.
+const WRITING_TIMEOUT_MS = 90000;
+
 export default function PcrReviewScreen({ route, navigation }) {
   const encounterId = route.params?.encounterId;
   const [phase, setPhase] = useState("loading"); // loading | writing | review | saving | saved | error
@@ -43,6 +47,14 @@ export default function PcrReviewScreen({ route, navigation }) {
       setCrewNotes(res.crew_notes || "");
       setPhase(res.status === "SAVED" ? "saved" : "review");
     } catch (e) {
+      // The extraction worker writes the encounter row asynchronously, so
+      // opening a draft the instant Copilot accepts it can arrive before
+      // the record exists. That is "not yet", not "never" -- keep waiting
+      // and let the poll below find it.
+      if (/no encounter/i.test(e.message || "")) {
+        setPhase("writing");
+        return;
+      }
       setError(e.message);
       setPhase("error");
     }
@@ -54,7 +66,20 @@ export default function PcrReviewScreen({ route, navigation }) {
   // turns into the editable document by itself.
   useEffect(() => {
     if (phase !== "writing") return undefined;
-    const id = setInterval(load, 2500);
+    let waited = 0;
+    const id = setInterval(() => {
+      waited += 2500;
+      if (waited > WRITING_TIMEOUT_MS) {
+        clearInterval(id);
+        setError(
+          "This draft never appeared. Copilot may not have had enough of the call to "
+          + "write one — narrate the call and ask again."
+        );
+        setPhase("error");
+        return;
+      }
+      load();
+    }, 2500);
     return () => clearInterval(id);
   }, [phase, load]);
 

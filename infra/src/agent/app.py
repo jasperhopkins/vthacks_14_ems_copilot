@@ -157,6 +157,7 @@ def _run_turn(ctx: tools.ToolContext, utterance: str, history) -> dict:
     failed_tools: list = []
     top_score: float | None = None
     spoken_to_patient = None
+    drafted_encounter_id = None
     reply_text = ""
     hit_iteration_limit = False
 
@@ -202,6 +203,15 @@ def _run_turn(ctx: tools.ToolContext, utterance: str, history) -> dict:
             for source in result.sources:
                 if source.get("kind") == "spoken_to_patient":
                     spoken_to_patient = source
+            # A draft tool that *ran* is not a draft that *started*: it
+            # declines when too little of the call has been heard. The
+            # client buffers a row and rolls the encounter off the back of
+            # this, so it has to be the tool's own verdict, not "the call
+            # did not raise". Getting that wrong buffered a draft whose
+            # encounter was never created, and the medic met it as
+            # "No encounter ..." on tapping the row.
+            if name == "draft_pcr_from_transcript" and result.content.get("started"):
+                drafted_encounter_id = result.content.get("encounter_id")
 
             tool_calls.append({"name": name, "args": args, "ok": True,
                                "tier": tools.TOOLS[name].tier})
@@ -221,6 +231,7 @@ def _run_turn(ctx: tools.ToolContext, utterance: str, history) -> dict:
         "failed_tools": failed_tools,
         "top_score": top_score,
         "spoken_to_patient": spoken_to_patient,
+        "drafted_encounter_id": drafted_encounter_id,
         "hit_iteration_limit": hit_iteration_limit,
     }
 
@@ -304,6 +315,12 @@ def handler(event, context):
         "sources": outcome["sources"],
         "tool_calls": outcome["tool_calls"],
         "spoken_to_patient": outcome["spoken_to_patient"],
+        # Set only when extraction was actually started. The client keys
+        # buffering the draft, clearing the transcript and rolling to a new
+        # encounter off this, so a declined draft must leave all three
+        # alone -- otherwise asking too early destroys the narration the
+        # medic had built up.
+        "drafted_encounter_id": outcome["drafted_encounter_id"],
         # So the app can render "I could not file that" honestly rather
         # than the medic discovering the boundary by asking twice.
         "can_file_reports": False,

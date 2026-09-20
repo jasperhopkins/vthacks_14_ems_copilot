@@ -521,6 +521,22 @@ endpoint is a four-file change:
   session, plays, and restarts the microphone — that ordering is the only
   reason a spoken reply is audible at all, not an optimisation. Read
   `node_modules/expo-audio/ios/AudioStream.swift` before changing it.
+- **A tool that *ran* is not a tool that *did something*.** The client
+  buffers a draft row, clears `transcriptRef` and rolls to a new encounter
+  off the back of a write-up turn, and it used to key that on the tool
+  call's `ok` — which only means "did not raise". A draft declined for too
+  little narration therefore buffered a row whose encounter was never
+  created (`No encounter ...` when the medic tapped it) *and* wiped the
+  narration they had just built, which is the one thing here that cannot
+  be recovered. The turn response now carries `drafted_encounter_id`, set
+  only when extraction actually started, and the client keys all three
+  actions off that. Any future tool with a declining path needs the same
+  treatment — `ok` is about transport, not outcome.
+- **`GET /pcr/{id}` can 404 for a draft that is genuinely coming.** The
+  extraction worker writes the row asynchronously, so opening a draft the
+  instant Copilot accepts it can beat the record into existence.
+  `PcrReviewScreen` treats "no encounter" as *not yet* and keeps polling to
+  `WRITING_TIMEOUT_MS`, rather than as a hard error.
 - **Talking to Copilot is not patient narration, and conflating the two is
   what produced empty PCRs.** Every settled segment used to go into
   `transcriptRef` whole, wake word and all — so a medic who opened

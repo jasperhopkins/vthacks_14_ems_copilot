@@ -457,16 +457,22 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
 
       setTurns((prev) => [{ ...res, id: res.turn_id, utterance }, ...prev]);
 
-      // A draft was requested: buffer it and hand the live call a clean
-      // encounter, so the next "write that up" is a separate report rather
-      // than an overwrite of this one (encounter_id is the table's only
-      // key), and so the assistant is not scoped to a finished record.
-      const drafted = (res.tool_calls || [])
-        .some((c) => c.name === "draft_pcr_from_transcript" && c.ok);
-      if (drafted) {
+      // A draft actually started: buffer it and hand the live call a clean
+      // encounter, so the next write-up is a separate report rather than
+      // an overwrite of this one (encounter_id is the table's only key),
+      // and so the assistant is not scoped to a finished record.
+      //
+      // Keyed on the backend's own verdict, never on the tool having run.
+      // The draft tool declines when too little of the call has been
+      // heard, and treating that as a draft buffered a row whose encounter
+      // was never created -- "No encounter ..." when the medic tapped it
+      // -- *and* wiped the narration they had just built up, which is the
+      // one thing here that cannot be recovered.
+      const draftedId = res.drafted_encounter_id;
+      if (draftedId) {
         setDrafts((prev) => [
-          { encounterId, at: Date.now(), status: "pending", flags: [] },
-          ...prev.filter((d) => d.encounterId !== encounterId),
+          { encounterId: draftedId, at: Date.now(), status: "pending", flags: [] },
+          ...prev.filter((d) => d.encounterId !== draftedId),
         ]);
         transcriptRef.current = "";
         setNarration("");
