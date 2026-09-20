@@ -12,9 +12,20 @@ import {
 } from "react-native";
 import { api } from "../api/client";
 import { colors, radius, space, severityStyle } from "../theme";
+import { Linking } from "react-native";
 import {
   Segmented, SearchField, Empty, ErrorText, Section, Chips,
 } from "../components/ui";
+
+// Four sources feed the interaction check and they are not equally
+// authoritative. A medic deciding whether to override needs to know which
+// one is talking, so the basis is rendered, never flattened away.
+export const BASIS_LABEL = {
+  curated_pair: "Curated clinical rule",
+  curated_class: "Curated drug-class rule",
+  fda_label: "FDA labelling — verify against your protocol",
+  drug_class: "Derived from drug-class data — verify against your protocol",
+};
 
 const MODES = [
   { key: "browse", label: "Formulary" },
@@ -187,9 +198,12 @@ export function FlagCard({ flag }) {
       <Text style={styles.flagNote}>{flag.note}</Text>
       {!!flag.basis && (
         <Text style={styles.flagBasis}>
-          {flag.basis === "curated_pair"
-            ? "Curated clinical rule"
-            : "Derived from drug-class data — verify against your protocol"}
+          {BASIS_LABEL[flag.basis] || flag.basis}
+        </Text>
+      )}
+      {!!flag.source_url && (
+        <Text style={styles.flagLink} onPress={() => Linking.openURL(flag.source_url)}>
+          Read the label on DailyMed →
         </Text>
       )}
     </View>
@@ -261,6 +275,7 @@ const styles = StyleSheet.create({
   },
   flagNote: { color: colors.text, fontSize: 14, lineHeight: 21 },
   flagBasis: { color: colors.muted, fontSize: 12, fontStyle: "italic" },
+  flagLink: { color: colors.accent, fontSize: 12, fontWeight: "600" },
 
   spinner: { marginTop: space.xl },
 });

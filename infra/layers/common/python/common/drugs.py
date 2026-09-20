@@ -11,23 +11,33 @@ need the exact same rules:
 One implementation means an interaction rule can't silently differ between
 "the EMT asked" and "the PCR noticed".
 
-Interactions are checked by two rule layers, and the merge direction
-matters:
+Interactions are checked by four rule layers, highest authority first.
+Every layer only ever *adds* flags; none may remove another's, because each
+is blind in places the others see:
 
   1. **Curated pairs** (`contraindicated_with` + `interaction_notes`) --
-     hand-authored, clinically phrased, agency-reviewable. These win.
-  2. **Drug classes** (`classes` + `contraindicated_classes`) -- MoA/EPC
-     class ids refreshed from NLM RxClass by
-     `seed_tables.py --refresh-classes`. One rule covers a whole class, so
-     vardenafil and avanafil flag against nitrates without anybody adding
-     them to a list.
+     hand-authored, clinically phrased, agency-reviewable.
+  2. **Curated classes** (`curated_contraindicated_classes`) -- a
+     hand-written rule against a whole drug class, for mechanisms that
+     generalise. "Epinephrine must not meet a non-selective beta blocker"
+     is one rule covering propranolol, labetalol, nadolol and sotalol,
+     keyed on the beta2-antagonist class so that beta-1 selective agents
+     like metoprolol correctly do *not* fire.
+  3. **FDA labelling** (`label_contraindications`) -- mined extractively
+     from openFDA by `seed_tables.py --refresh-labels`. Each row carries
+     the verbatim sentence and the DailyMed set id it came from.
+  4. **RxClass drug classes** (`classes` + `contraindicated_classes`) --
+     MoA/EPC ids from `--refresh-classes`.
 
-Layer 2 only ever *adds* flags. It must never be allowed to remove a
-curated rule, because its coverage is patchy in exactly the places that
-matter: RxClass has no contraindication relation at all between
-epinephrine and propranolol, so the unopposed-alpha interaction -- this
-project's headline cross-check -- exists only in layer 1. Swapping the
-curated rules out for class rules would silently delete it.
+Why all four. RxClass has no contraindication relation between epinephrine
+and propranolol at all, so the unopposed-alpha cross-check exists only in
+layers 1-2. RxClass also records nitrate/PDE5 on nitroglycerin's side only,
+leaving sildenafil's own record empty -- so amyl nitrite, a nitrate the EMS
+formulary carries, did not flag against any PDE5 inhibitor until the FDA
+label supplied the reciprocal direction. And labelling in turn says nothing
+about epinephrine and beta blockers in its contraindications section.
+Collapsing these into one source would silently drop whichever interactions
+that source happens not to cover.
 
 Name resolution is the hard part, because these names arrive from speech.
 Comprehend Medical's RxNorm linking alone is not enough: it maps "narcan"
@@ -106,6 +116,30 @@ def get_drug(name: str):
     return resolve_drug(name)[1]
 
 
+def class_names(record: dict) -> set:
+    """Class names this drug counts as, for interaction matching.
+
+    Honours `class_exclusions`: a reviewed statement that a class RxClass
+    assigns is wrong *for interaction purposes*. RxClass files nitrous
+    oxide under the MoA "Nitric Oxide Donors" -- true of the nitrogen
+    chemistry, false of the clinical rule, since N2O is not an organic
+    nitrate and carries none of the PDE5 interaction that nitroglycerin and
+    amyl nitrite do. Without the exclusion, every PDE5 inhibitor's FDA
+    labelling flagged against Entonox, telling a medic to withhold
+    analgesia from a patient who took Viagra.
+
+    Dropping the class outright is not the fix: amyl nitrite is an organic
+    nitrite, genuinely does carry the interaction, and "Nitric Oxide
+    Donors" is the only class RxClass gives it.
+    """
+    excluded = {str(x) for x in (record.get("class_exclusions") or [])}
+    return {
+        c.get("class_name")
+        for c in (record.get("classes") or [])
+        if isinstance(c, dict) and c.get("class_name") not in excluded
+    }
+
+
 def _class_ids(record: dict, key: str) -> dict:
     """{class_id: class entry} for one side of a record's class data."""
     return {
@@ -138,12 +172,11 @@ def _class_flag(record: dict, other_record: dict) -> dict | None:
     """
     if not other_record:
         return None
-    shared = set(_class_ids(record, "contraindicated_classes")) & set(
-        _class_ids(other_record, "classes")
-    )
+    entries = {cid: e for cid, e in _class_ids(other_record, "classes").items()
+               if e.get("class_name") in class_names(other_record)}
+    shared = set(_class_ids(record, "contraindicated_classes")) & set(entries)
     if not shared:
         return None
-    entries = _class_ids(other_record, "classes")
     names = sorted(entries[cid].get("class_name", cid) for cid in shared)
     return {
         "severity": record.get("severity", "CONTRAINDICATED"),
@@ -158,6 +191,59 @@ def _class_flag(record: dict, other_record: dict) -> dict | None:
             for cid in sorted(shared)
         ],
     }
+
+
+def _curated_class_flag(record: dict, other_record: dict) -> dict | None:
+    """Layer 2: a hand-written rule against a whole drug class."""
+    if not other_record:
+        return None
+    rules = record.get("curated_contraindicated_classes") or []
+    other_classes = class_names(other_record)
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        if rule.get("class_name") in other_classes:
+            return {
+                "severity": rule.get("severity", "CONTRAINDICATED"),
+                "note": rule.get("note", "Do not co-administer."),
+                "basis": "curated_class",
+                "matched_classes": [{"class_id": rule.get("class_id", ""),
+                                     "class_name": rule.get("class_name", "")}],
+            }
+    return None
+
+
+def _label_flag(record: dict, other_canonical: str, other_record: dict) -> dict | None:
+    """Layer 3: FDA labelling says not to co-administer.
+
+    The note is the label's own sentence rather than a paraphrase of it,
+    and carries the DailyMed link, so a medic (or an auditor) can read the
+    source rather than trusting this pipeline.
+    """
+    other_classes = class_names(other_record or {})
+    for row in record.get("label_contraindications") or []:
+        if not isinstance(row, dict):
+            continue
+        hit = (
+            (row.get("kind") == "drug" and row.get("target") == other_canonical)
+            or (row.get("kind") == "class" and row.get("target") in other_classes)
+        )
+        if not hit:
+            continue
+        return {
+            "severity": row.get("severity", "CONTRAINDICATED"),
+            "note": (f"FDA labelling for {record.get('drug_name', 'this drug')}: "
+                     f"\u201c{row.get('evidence', '').strip()}\u201d"),
+            "basis": "fda_label",
+            "source": row.get("source", "FDA drug label"),
+            "source_url": row.get("source_url"),
+        }
+    return None
+
+
+# Highest authority first. A pair that several layers match is reported once,
+# by the earliest -- its note is the one written for a medic.
+_LAYER_RANK = {"curated_pair": 0, "curated_class": 1, "fda_label": 2, "drug_class": 3}
 
 
 def check_interactions(drug_names: list[str]) -> list[dict]:
@@ -188,13 +274,15 @@ def check_interactions(drug_names: list[str]) -> list[dict]:
             record = resolved[first][1]
             if not record:
                 continue
-            found = (_curated_flag(record, resolved[second][0])
-                     or _class_flag(record, resolved[second][1]))
+            canonical_second, record_second = resolved[second]
+            found = (_curated_flag(record, canonical_second)
+                     or _curated_class_flag(record, record_second)
+                     or _label_flag(record, canonical_second, record_second)
+                     or _class_flag(record, record_second))
             if found:
-                # Prefer a curated rule even if the class rule matched the
-                # other direction first.
-                if hit is None or (hit["basis"] == "drug_class"
-                                   and found["basis"] == "curated_pair"):
+                # Keep whichever layer ranks highest, whichever direction
+                # matched it first.
+                if hit is None or _LAYER_RANK[found["basis"]] < _LAYER_RANK[hit["basis"]]:
                     hit = {"drug_a": first, "drug_b": second, **found}
                 if hit["basis"] == "curated_pair":
                     break

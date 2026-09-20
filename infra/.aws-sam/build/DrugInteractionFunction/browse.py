@@ -58,8 +58,12 @@ def list_handler(event, context):
             "common_uses": row.get("common_uses") or [],
             "aliases": sorted(aliases.get(name.lower(), [])),
             # Enough for the card to warn without a second round trip.
+            # Any of the four rule layers is reason to show the warning
+            # badge; the detail view says which one.
             "has_interactions": bool(row.get("contraindicated_with")
-                                     or row.get("contraindicated_classes")),
+                                     or row.get("contraindicated_classes")
+                                     or row.get("curated_contraindicated_classes")
+                                     or row.get("label_contraindications")),
         })
     cards.sort(key=lambda c: c["drug_name"])
 

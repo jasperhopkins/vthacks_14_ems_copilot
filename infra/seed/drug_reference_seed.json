@@ -1,5 +1,805 @@
 [
   {
+    "drug_name": "acetaminophen",
+    "display_name": "Acetaminophen",
+    "class": "Analgesics, antipyretic, other",
+    "pharmacologic_action": "May work peripherally to block pain impulse generation; may also inhibit prostaglandin synthesis in CNS",
+    "common_uses": [
+      "Pain control",
+      "fever control"
+    ],
+    "indications_text": "Pain control, fever control",
+    "contraindications_text": "Hypersensitivity, severe acute liver disease",
+    "trade_names": [],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000108",
+        "class_name": "Prostaglandin Receptor Antagonists",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "acetazolamide",
+    "display_name": "Acetazolamide",
+    "class": "Carbonic anhydrase inhibitors",
+    "pharmacologic_action": "Inhibits hydrogen ion excretion in renal tubule, increasing sodium, potassium, bicarbonate, and water excretion and producing alkaline diuresis",
+    "common_uses": [
+      "Acute mountain sickness"
+    ],
+    "indications_text": "Acute mountain sickness",
+    "contraindications_text": "Known hypokalemia/hyponatremia, hypersensitivity to acetazolamide or sulfa, liver disease, renal disease, cirrhosis, long term administration in patients with chronic, noncongestive angle-closure glaucoma",
+    "trade_names": [
+      "diamox sequels"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000235",
+        "class_name": "Carbonic Anhydrase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175517",
+        "class_name": "Carbonic Anhydrase Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000000235",
+        "class_name": "Carbonic Anhydrase Inhibitors",
+        "class_type": "MOA"
+      }
+    ]
+  },
+  {
+    "drug_name": "acetic acid",
+    "display_name": "Acetic acid (vinegar)",
+    "class": "Other",
+    "pharmacologic_action": "Stabilizes nematocyst discharge in non-United States jellyfish thus decreasing pain",
+    "common_uses": [
+      "Pain control for jellyfish envenomation (outside of the United States (US))"
+    ],
+    "indications_text": "Pain control for jellyfish envenomation (outside of the United States (US))",
+    "contraindications_text": "May increase nematocyst discharge for US jellyfish and therefore should be used outside of the US only",
+    "trade_names": [
+      "vinegar"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary."
+  },
+  {
+    "drug_name": "acetylcysteine",
+    "display_name": "Acetylcysteine",
+    "class": "Antidotes, other",
+    "pharmacologic_action": "Acts as sulfhydryl group donor to restore liver glutathione; may also scavenge free radicals to prevent delayed hepatotoxicity as antioxidant; encourages sulfation pathway of metabolism for acetaminophen",
+    "common_uses": [
+      "Antidote for acetaminophen overdose"
+    ],
+    "indications_text": "Antidote for acetaminophen overdose",
+    "contraindications_text": "Acute asthma WARNING: Nausea and vomiting are common adverse effects following the oral administration of acetylcysteine",
+    "trade_names": [
+      "acetadote",
+      "mucomyst"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000170",
+        "class_name": "Free Radical Scavenging Activity",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175429",
+        "class_name": "Antidote",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175547",
+        "class_name": "Reduction Activity",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175776",
+        "class_name": "Mucolytic",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175961",
+        "class_name": "Antidote for Acetaminophen Overdose",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "activated charcoal",
+    "display_name": "Activated Charcoal",
+    "class": "Antidotes, other",
+    "pharmacologic_action": "Adsorbs a variety of drugs and chemicals (e.g., physical binding of a molecule to the surface of charcoal particles); desorbtion of bound particles may occur unless the ratio of charcoal to toxin is extremely high",
+    "common_uses": [
+      "Overdose and poisoning"
+    ],
+    "indications_text": "Overdose and poisoning",
+    "contraindications_text": "Unprotected airway (beware of aspiration), caustic ingestions, intestinal obstruction",
+    "trade_names": [
+      "actidose-aqua"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000087",
+        "class_name": "Chelating Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "adenosine",
+    "display_name": "Adenosine",
+    "class": "Antidysrhythmics",
+    "pharmacologic_action": "Slows conduction through AV node and interrupts AV reentry pathways, which restore normal sinus symptoms",
+    "common_uses": [
+      "Conversion of regular",
+      "narrow complex tachycardia – stable supraventricular tachycardia (SVT) or regular",
+      "monomorphic wide complex tachycardia"
+    ],
+    "indications_text": "Conversion of regular, narrow complex tachycardia – stable supraventricular tachycardia (SVT) or regular, monomorphic wide complex tachycardia",
+    "contraindications_text": "Hypersensitivity, second- or third-degree AV Block (except those on pacemakers), sick sinus syndrome, atrial flutter or fibrillation, ventricular tachycardia",
+    "trade_names": [
+      "adenocard"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000228",
+        "class_name": "Structural Macromolecules",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175788",
+        "class_name": "Adenosine Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000178375",
+        "class_name": "Adenosine Receptor Agonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "albuterol",
+    "class": "Beta-2 agonist bronchodilator",
+    "common_uses": [
+      "Asthma",
+      "COPD exacerbation",
+      "Bronchospasm"
+    ],
+    "adult_dose": "2.5 mg nebulized, may repeat.",
+    "pediatric_dose": "2.5 mg nebulized (same as adult for most protocols; confirm local protocol for <2 years).",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "Can cause tachycardia/tremor -- monitor cardiac patients closely. SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000009922",
+        "class_name": "Adrenergic beta2-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175779",
+        "class_name": "beta2-Adrenergic Agonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [],
+    "display_name": "Albuterol",
+    "pharmacologic_action": "Beta-2 receptor agonist with some beta-1 activity; relaxes bronchial smooth muscle with little effect on heart rate",
+    "indications_text": "Bronchospastic lung disease",
+    "contraindications_text": "Hypersensitivity, tachycardia secondary to heart condition",
+    "trade_names": [
+      "accuneb",
+      "proair",
+      "proventil",
+      "ventolin"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)"
+  },
+  {
+    "drug_name": "amiodarone",
+    "display_name": "Amiodarone",
+    "class": "Class III antidysrhythmics",
+    "pharmacologic_action": "Class III antidysrhythmic agent, which inhibits adrenergic stimulation; affects sodium, potassium, and calcium channels; markedly prolongs action potential and repolarization; decreases AV conduction and sinus node function",
+    "common_uses": [
+      "Management of regular wide complex tachycardia in stable patients",
+      "irregular wide complex tachycardia in stable patients",
+      "and as antidysrhythmic for the management of ventricular fibrillation (VF) and pulseless ventricular tachycardia (VT)"
+    ],
+    "indications_text": "Management of regular wide complex tachycardia in stable patients, irregular wide complex tachycardia in stable patients, and as antidysrhythmic for the management of ventricular fibrillation (VF) and pulseless ventricular tachycardia (VT)",
+    "contraindications_text": "Hypersensitivity, Severe sinus node dysfunction, second degree or third-degree heart block or bradycardia causing syncope (except with functioning artificial pacemaker), cardiogenic shock WARNING: Avoid during breastfeeding",
+    "trade_names": [
+      "cordarone",
+      "nexterone",
+      "pacerone"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000069",
+        "class_name": "Calcium Channel Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000161",
+        "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000211",
+        "class_name": "Potassium Channel Interactions",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175426",
+        "class_name": "Antiarrhythmic",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000181004",
+        "class_name": "Sodium Channel Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000182137",
+        "class_name": "Cytochrome P450 2D6 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000182138",
+        "class_name": "Cytochrome P450 1A2 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000185503",
+        "class_name": "P-Glycoprotein Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000185504",
+        "class_name": "Cytochrome P450 2C9 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000190114",
+        "class_name": "Cytochrome P450 3A Inhibitors",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "amyl nitrite",
+    "display_name": "Amyl Nitrite",
+    "class": "Cyanide antidote",
+    "pharmacologic_action": "Reacts with hemoglobin to form methemoglobin, an oxidized form of hemoglobin incapable of oxygen transport but with high affinity for cyanide. Cyanide preferentially binds to methemoglobin over cytochrome a3, forming the nontoxic cyanomethemoglobin",
+    "common_uses": [
+      "Acute cyanide toxicity"
+    ],
+    "indications_text": "Acute cyanide toxicity",
+    "contraindications_text": "None in the case of suspected pure cyanide toxicity noted, documented hypersensitivity, suspected or confirmed smoke inhalation and/or carbon monoxide poisoning WARNING: There is a risk of worsening hypoxia due to methemoglobin formation",
+    "trade_names": [],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000120",
+        "class_name": "Nitric Oxide Donors",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "aspirin",
+    "class": "Antiplatelet / NSAID",
+    "common_uses": [
+      "Suspected acute coronary syndrome / chest pain"
+    ],
+    "adult_dose": "162-325 mg PO (chewed), non-enteric coated preferred.",
+    "pediatric_dose": "Not indicated for pediatric field use.",
+    "contraindicated_with": [
+      "active gi bleed",
+      "aspirin allergy"
+    ],
+    "interaction_notes": {
+      "active gi bleed": "Increased bleeding risk -- withhold and consult medical control.",
+      "aspirin allergy": "Do not administer -- risk of anaphylaxis/bronchospasm."
+    },
+    "notes": "SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000000160",
+        "class_name": "Cyclooxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175578",
+        "class_name": "Platelet Aggregation Inhibitor",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175722",
+        "class_name": "Nonsteroidal Anti-inflammatory Drug",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [],
+    "display_name": "Aspirin",
+    "pharmacologic_action": "Inhibits synthesis of prostaglandin by cyclooxygenase; inhibits platelet aggregation; has antipyretic and analgesic activity",
+    "indications_text": "Antiplatelet agent for the care of patients suspected of suffering from an acute coronary syndrome",
+    "contraindications_text": "Hypersensitivity to aspirin or NSAIDs (aspirin-associated hypersensitivity reactions include aspirin-induced urticarial or aspirin-intolerant asthma), bleeding GI ulcers, hemolytic anemia from pyruvate kinase (PK) and glucose-6-phosphate dehydrogenase (G6PD) deficiency, hemophilia, hemorrhagic diathesis, hemorrhoids, lactating mother, nasal polyps associated with asthma, sarcoidosis, thrombocytopenia, ulcerative colitis",
+    "trade_names": [
+      "alka-seltzer with aspirin",
+      "ascriptin",
+      "bayer buffered aspirin",
+      "ecotrin"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)"
+  },
+  {
+    "drug_name": "atropine",
+    "display_name": "Atropine",
+    "class": "Anticholinergic, toxicity antidotes",
+    "pharmacologic_action": "Competitively inhibits action of acetylcholinesterase on autonomic effectors innervated by postganglionic nerves",
+    "common_uses": [
+      "Management of nerve agent toxicity",
+      "symptomatic bradycardia (primary or related to toxin ingestion)",
+      "organophosphate and carbamate insecticide toxicity NOTE: Ineffective in hypothermic bradycardia"
+    ],
+    "indications_text": "Management of nerve agent toxicity, symptomatic bradycardia (primary or related to toxin ingestion), organophosphate and carbamate insecticide toxicity NOTE: Ineffective in hypothermic bradycardia",
+    "contraindications_text": "No absolute contraindications for ACLS, documented hypersensitivity in non- ACLS/nerve agent/organophosphate scenarios RELATIVE CONTRAINDICATIONS: Narrow-angle glaucoma, GI obstruction, severe ulcerative colitis, toxic megacolon, bladder outlet obstruction, myasthenia gravis, hemorrhage w/cardiovascular instability, thyrotoxicosis",
+    "trade_names": [
+      "atropen",
+      "duodote"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000125",
+        "class_name": "Cholinergic Muscarinic Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175370",
+        "class_name": "Cholinergic Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175574",
+        "class_name": "Anticholinergic",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175700",
+        "class_name": "Cholinergic Muscarinic Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "avanafil",
+    "class": "PDE5 inhibitor",
+    "common_uses": [
+      "Erectile dysfunction"
+    ],
+    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "SEED/DEMO dataset only. Deliberately carries NO hand-written `contraindicated_with` entry for nitrates: the nitrate interaction is caught by the class-level rule (PDE5 inhibitor MoA) instead. That is the point of the class rules -- adding a new PDE5 inhibitor is a seed-data change with no interaction list to maintain.",
+    "classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175599",
+        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000190484",
+        "class_name": "Guanylate Cyclase Stimulators",
+        "class_type": "MOA"
+      }
+    ],
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Guanylate Cyclase Stimulators",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration with guanylate cyclase (GC) stimulators such as riociguat and vericiguat ( 4.3 ) 4.1 Nitrates Administration of avanafil tablets with any form of organic nitrates, either regularly and/or intermittently, is contraindicated.",
+        "set_id": "1d04e17d-7399-430a-a8bb-fa1912b155e9",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1d04e17d-7399-430a-a8bb-fa1912b155e9"
+      },
+      {
+        "kind": "class",
+        "target": "Nitrate Vasodilator",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of avanafil tablet to patients using any form of organic nitrate is contraindicated ( 4.1 )",
+        "set_id": "1d04e17d-7399-430a-a8bb-fa1912b155e9",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1d04e17d-7399-430a-a8bb-fa1912b155e9"
+      },
+      {
+        "kind": "class",
+        "target": "Nitric Oxide Donors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of avanafil tablet to patients using any form of organic nitrate is contraindicated ( 4.1 )",
+        "set_id": "1d04e17d-7399-430a-a8bb-fa1912b155e9",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1d04e17d-7399-430a-a8bb-fa1912b155e9"
+      }
+    ]
+  },
+  {
+    "drug_name": "calcium chloride",
+    "display_name": "Calcium Chloride",
+    "class": "Antidotes, other; calcium salts",
+    "pharmacologic_action": "Bone mineral component; cofactor in enzymatic reactions, essential for neurotransmission, muscle contraction, and many signal transduction pathways",
+    "common_uses": [
+      "For use in topical burns (hydrofluoric acid) or for use in calcium channel blocker overdose"
+    ],
+    "indications_text": "For use in topical burns (hydrofluoric acid) or for use in calcium channel blocker overdose",
+    "contraindications_text": "Hypercalcemia, documented hypersensitivity, life-threatening cardiac arrhythmias may occur in known or suspected severe hypokalemia WARNING: There is a risk for digitalis toxicity. Be cautious of peripheral IV use as significant tissue necrosis at injection site may occur",
+    "trade_names": [
+      "calcium chloride"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000020074",
+        "class_name": "Phosphate Chelating Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "calcium gluconate",
+    "display_name": "Calcium Gluconate",
+    "class": "Antidotes, other; calcium salts",
+    "pharmacologic_action": "Bone mineral component; cofactor in enzymatic reactions, essential for neurotransmission, muscle contraction, and many signal transduction pathways",
+    "common_uses": [
+      "For use in topical burns (hydrofluoric acid) or for use in calcium channel blocker overdose"
+    ],
+    "indications_text": "For use in topical burns (hydrofluoric acid) or for use in calcium channel blocker overdose",
+    "contraindications_text": "Hypercalcemia, documented hypersensitivity, sarcoidosis, life-threatening cardiac arrhythmias may occur in known or suspected severe hypokalemia WARNING: There is a risk for digitalis toxicity",
+    "trade_names": [
+      "gluconate"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000020074",
+        "class_name": "Phosphate Chelating Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "cimetidine",
+    "display_name": "Cimetidine",
+    "class": "Histamine H2 antagonist",
+    "pharmacologic_action": "blocks H2-receptors of gastric parietal cells, leading to inhibition of gastric secretions",
+    "common_uses": [
+      "For the management of gastric or duodenal ulcers",
+      "gastroesophageal reflux",
+      "as an adjunct in the treatment of urticarial and/or pruritis in patients suffering from allergic reaction"
+    ],
+    "indications_text": "For the management of gastric or duodenal ulcers, gastroesophageal reflux, as an adjunct in the treatment of urticarial and/or pruritis in patients suffering from allergic reaction",
+    "contraindications_text": "Hypersensitivity to cimetidine or other H2-receptor antagonists",
+    "trade_names": [
+      "tagamet"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000151",
+        "class_name": "Histamine H2 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175784",
+        "class_name": "Histamine-2 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "dexamethasone",
+    "display_name": "Dexamethasone",
+    "class": "Corticosteroid, anti-inflammatory drugs",
+    "pharmacologic_action": "Potent glucocorticoid with minimal to no mineralocorticoid activity Decreases inflammation by suppressing migration of polymorphonuclear leukocytes (PMNs) and reducing capillary permeability; stabilizes cell and lysosomal membranes, increases surfactant synthesis, increases serum vitamin A concentration, and inhibits prostaglandin and proinflammatory cytokines; suppresses lymphocyte proliferation through direct cytolysis, inhibits mitosis, breaks down granulocyte aggregates, and improves pulmonary microcirculation",
+    "common_uses": [
+      "Used in the management of croup and bronchospasm",
+      "as well as the management of patients suffering from high altitude cerebral edema (HACE)"
+    ],
+    "indications_text": "Used in the management of croup and bronchospasm, as well as the management of patients suffering from high altitude cerebral edema (HACE)",
+    "contraindications_text": "Documented hypersensitivity, systemic fungal infection, cerebral malaria",
+    "trade_names": [
+      "decadron",
+      "dexasone"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000134",
+        "class_name": "Lipoxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000159",
+        "class_name": "Glucocorticoid Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175450",
+        "class_name": "Corticosteroid Hormone Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175576",
+        "class_name": "Corticosteroid",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "dextrose",
+    "display_name": "Dextrose",
+    "class": "Glucose-elevating agents; metabolic and endocrine, other",
+    "pharmacologic_action": "Parenteral dextrose is oxidized to carbon dioxide and water, and provides 3.4 kilocalories/gram of d-glucose",
+    "common_uses": [
+      "Used for the management of hypoglycemia"
+    ],
+    "indications_text": "Used for the management of hypoglycemia",
+    "contraindications_text": "Hyperglycemia, anuria, diabetic coma, intracranial or intraspinal hemorrhage, dehydrated patients with delirium, glucose-galactose malabsorption syndrome, and documented hypersensitivity",
+    "trade_names": [
+      "d50w",
+      "dglucose",
+      "glucose"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000228",
+        "class_name": "Structural Macromolecules",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "diazepam",
+    "display_name": "Diazepam",
+    "class": "Benzodiazepine, anticonvulsants, skeletal muscle relaxants, anxiolytic",
+    "pharmacologic_action": "Modulates postsynaptic effects of GABA-A transmission, resulting in an increase in presynaptic inhibition. Appears to act on part of the limbic system, as well as on the thalamus and hypothalamus, to induce a calming effect",
+    "common_uses": [
+      "For use in agitated or violent patients",
+      "as well as for the management of seizures"
+    ],
+    "indications_text": "For use in agitated or violent patients, as well as for the management of seizures",
+    "contraindications_text": "Documented hypersensitivity, severe respiratory depression",
+    "trade_names": [
+      "acudial",
+      "diastat",
+      "valium"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000118",
+        "class_name": "GABA A Modulators",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175694",
+        "class_name": "Benzodiazepine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "diltiazem",
+    "display_name": "Diltiazem",
+    "class": "Calcium channel blocker, antidysrhythmic type IV",
+    "pharmacologic_action": "Inhibits extracellular calcium ion influx across membranes of myocardial cells and vascular smooth muscle cells, resulting in inhibition of cardiac and vascular smooth muscle contraction and thereby dilating main coronary and systemic arteries; no effect on serum calcium concentrations; substantial inhibitory effects on cardiac conduction system, acting principally at AV node, with some effects at sinus node",
+    "common_uses": [
+      "For management of narrow complex tachycardias"
+    ],
+    "indications_text": "For management of narrow complex tachycardias",
+    "contraindications_text": "Documented hypersensitivity, Wolff-Parkinson-White syndrome, Lown-Ganong- Levine syndrome, symptomatic severe hypotension (systolic BP less than 90 mmHg), sick sinus syndrome (if no pacemaker), second- and third-degree heart block (if no pacemaker present), and complete heart block. Contraindications for IV administration: Use in newborns (because of benzyl alcohol), concomitant beta-blocker therapy, cardiogenic shock, ventricular tachycardia (must determine whether origin is supraventricular or ventricular)",
+    "trade_names": [
+      "dilacor",
+      "diltiaz"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000069",
+        "class_name": "Calcium Channel Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000020065",
+        "class_name": "L-Calcium Channel Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175566",
+        "class_name": "Calcium Channel Blocker",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000182141",
+        "class_name": "Cytochrome P450 3A4 Inhibitors",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "diphenhydramine",
+    "display_name": "Diphenhydramine",
+    "class": "Antihistamine — first generation",
+    "pharmacologic_action": "Histamine H1-receptor antagonist of effector cells in respiratory tract, blood vessels, and GI smooth muscle",
+    "common_uses": [
+      "For urticarial and/or pruritis in the management of patients suffering from allergic reaction as well as for the management of patents suffering from dystonia/akathisia"
+    ],
+    "indications_text": "For urticarial and/or pruritis in the management of patients suffering from allergic reaction as well as for the management of patents suffering from dystonia/akathisia",
+    "contraindications_text": "Documented hypersensitivity, use controversial in lower respiratory tract disease (such as acute asthma), premature infants and neonates",
+    "trade_names": [
+      "benadryl"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000190",
+        "class_name": "Histamine H1 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175587",
+        "class_name": "Histamine-1 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "dopamine",
+    "display_name": "Dopamine",
+    "class": "Inotropic agent; catecholamine; pressor",
+    "pharmacologic_action": "Endogenous catecholamine, acting on both dopaminergic and adrenergic neurons. Low dose stimulates mainly dopaminergic receptors, producing renal and mesenteric vasodilation; higher dose stimulates both beta-1-adrenergic and dopaminergic receptors, producing cardiac stimulation and renal vasodilation; large dose stimulates alpha-adrenergic receptors",
+    "common_uses": [
+      "As a pressor agent used in the management of shock"
+    ],
+    "indications_text": "As a pressor agent used in the management of shock",
+    "contraindications_text": "Hypersensitivity to dopamine, pheochromocytoma, ventricular fibrillation, uncorrected tachyarrhythmias WARNING: Dopamine is a vesicant and can cause severe tissue damage if extravasation occurs",
+    "trade_names": [
+      "intropin"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000117",
+        "class_name": "Dopamine Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000122",
+        "class_name": "Adrenergic Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175570",
+        "class_name": "Catecholamine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "droperidol",
+    "display_name": "Droperidol",
+    "class": "Antiemetic agents; antipsychotic",
+    "pharmacologic_action": "Antiemesis: dopamine receptor blockade in brain, predominantly dopamine-2 receptor. When reuptake is prevented, a strong antidopaminergic, antiserotonergic response occurs. Droperidol reduces motor activity, anxiety, and causes sedation; also possesses adrenergic blocking, antifibrillatory, antihistaminic, and anticonvulsive properties",
+    "common_uses": [
+      "For use in the patient with acute delirium or psychosis"
+    ],
+    "indications_text": "For use in the patient with acute delirium or psychosis",
+    "contraindications_text": "Hypersensitivity, known or suspected prolonged QT interval; QTc interval greater than 450 msec in females or greater than 440 msec in males WARNING: Use with caution in patients with bradycardia, cardiac disease, concurrent MAO inhibitor therapy, Class I and Class III dysrhythmics or other drugs that prolong the QT interval and cause electrolyte disturbances due to its adverse cardiovascular effects, e.g., QT prolongation, hypotension, tachycardia, and torsades de pointes",
+    "trade_names": [
+      "inapsine"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175799",
+        "class_name": "Dopamine D2 Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175800",
+        "class_name": "Dopamine-2 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
     "drug_name": "epinephrine",
     "class": "Sympathomimetic / vasopressor",
     "common_uses": [
@@ -55,29 +855,469 @@
         "class_type": "EPC"
       }
     ],
+    "contraindicated_classes": [],
+    "display_name": "Epinephrine",
+    "pharmacologic_action": "Strong alpha-adrenergic effects, which cause an increase in cardiac output and heart rate, a decrease in renal perfusion and peripheral vascular resistance, and a variable effect on BP, resulting in systemic vasoconstriction and increased vascular permeability. Strong beta-1- and moderate beta-2-adrenergic effects, resulting in bronchial smooth muscle relaxation Secondary relaxation effect on smooth muscle of stomach, intestine, uterus, and urinary bladder",
+    "indications_text": "For use in the management of patients suffering anaphylaxis, shock, cardiac arrest, bradycardia, or in the nebulized form for croup/bronchiolitis and IM form for refractory acute asthma",
+    "contraindications_text": "Hypersensitivity, cardiac dilatation and coronary insufficiency",
+    "trade_names": [
+      "adrenaclick",
+      "adrenalin",
+      "asthmanefrin",
+      "auvi-q",
+      "epipen",
+      "twinject",
+      "vaponefrin"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "curated_contraindicated_classes": [
+      {
+        "class_id": "N0000009924",
+        "class_name": "Adrenergic beta2-Antagonists",
+        "severity": "CONTRAINDICATED",
+        "note": "Patient is on a NON-SELECTIVE beta blocker. Beta-2 blockade leaves epinephrine's alpha effects unopposed -- severe hypertension and reflex bradycardia are possible. Consider glucagon. Keyed to the beta-2 antagonist class on purpose: beta-1 selective agents such as metoprolol do not carry this risk and do not fire this rule."
+      }
+    ]
+  },
+  {
+    "drug_name": "famotidine",
+    "display_name": "Famotidine",
+    "class": "Histamine H2 antagonist",
+    "pharmacologic_action": "Blocks H2 receptors of gastric parietal cells, leading to inhibition of gastric secretions",
+    "common_uses": [
+      "For the management of gastric or duodenal ulcers",
+      "gastroesophageal reflux",
+      "as an adjunct in the treatment of urticarial and/or pruritus in patients suffering from allergic reaction"
+    ],
+    "indications_text": "For the management of gastric or duodenal ulcers, gastroesophageal reflux, as an adjunct in the treatment of urticarial and/or pruritus in patients suffering from allergic reaction",
+    "contraindications_text": "Hypersensitivity to famotidine or other H2-receptor antagonists",
+    "trade_names": [
+      "pepcid"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000151",
+        "class_name": "Histamine H2 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175784",
+        "class_name": "Histamine-2 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
     "contraindicated_classes": []
   },
   {
-    "drug_name": "propranolol",
-    "class": "Non-selective beta-blocker",
+    "drug_name": "fentanyl",
+    "display_name": "Fentanyl",
+    "class": "Synthetic opioid, opioid analgesics",
+    "pharmacologic_action": "Narcotic agonist-analgesic of opiate receptors; inhibits ascending pain pathways, thus altering response to pain; increases pain threshold; produces analgesia, respiratory depression, and sedation",
     "common_uses": [
-      "Hypertension",
-      "Arrhythmia",
-      "Migraine prophylaxis (not an EMS field use)"
+      "Management of acute pain"
     ],
-    "adult_dose": "Not typically field-administered by EMS; relevant here as a patient home medication that affects other drug choices.",
-    "pediatric_dose": "N/A for field EMS use.",
-    "contraindicated_with": [
-      "epinephrine"
+    "indications_text": "Management of acute pain",
+    "contraindications_text": "Hypersensitivity WARNING: Should be used with caution in the elderly and in patients with hypotension, suspected gastrointestinal obstruction, head injury, and concomitant CNS depressants",
+    "trade_names": [],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000175684",
+        "class_name": "Full Opioid Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175690",
+        "class_name": "Opioid Agonist",
+        "class_type": "EPC"
+      }
     ],
-    "interaction_notes": {
-      "epinephrine": "See epinephrine entry -- unopposed alpha effects risk."
-    },
-    "notes": "SEED/DEMO dataset only.",
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "glucagon",
+    "display_name": "Glucagon",
+    "class": "Hypoglycemia antidotes, glucose-elevating agents, other antidotes (e.g., beta-blocker or calcium channel blocker overdose)",
+    "pharmacologic_action": "Insulin antagonist. Stimulates cAMP synthesis to accelerate hepatic glycogenolysis and gluconeogenesis. Glucagon also relaxes smooth muscles of GI tract",
+    "common_uses": [
+      "For the management of hypoglycemic patients as well as patients suffering symptomatic bradycardia after beta blocker or calcium channel blocker overdose"
+    ],
+    "indications_text": "For the management of hypoglycemic patients as well as patients suffering symptomatic bradycardia after beta blocker or calcium channel blocker overdose",
+    "contraindications_text": "Hypersensitivity, pheochromocytoma, insulinoma WARNING: Nausea and vomiting are common adverse effects following the administration of glucagon",
+    "trade_names": [
+      "glucagen",
+      "glucagen hypokit",
+      "glucagon emergency kit"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000010275",
+        "class_name": "Glucagon Receptor Interactions",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000190852",
+        "class_name": "Antihypoglycemic Agent",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000190853",
+        "class_name": "Gastrointestinal Motility Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "haloperidol",
+    "display_name": "Haloperidol",
+    "class": "First generation antipsychotic",
+    "pharmacologic_action": "Antagonizes dopamine-1 and dopamine-2 receptors in brain; depresses reticular activating system and inhibits release of hypothalamic and hypophyseal hormones",
+    "common_uses": [
+      "For the management of acute psychosis or agitated/violent behavior refractory to non- pharmacologic interventions"
+    ],
+    "indications_text": "For the management of acute psychosis or agitated/violent behavior refractory to non- pharmacologic interventions",
+    "contraindications_text": "Documented hypersensitivity, Severe CNS depression (including coma), neuroleptic malignant syndrome, poorly controlled seizure disorder, Parkinson’s disease WARNING: Risk of sudden death, torsades de pointes, and prolonged QT interval from off-label IV administration of higher than recommended dose. Continuous cardiac monitoring is required if administering IV",
+    "trade_names": [
+      "haldol",
+      "haldol decanoate",
+      "haloperidol la",
+      "peridol"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000180182",
+        "class_name": "Typical Antipsychotic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "helium gas mixture",
+    "display_name": "Helium Gas Mixture",
+    "class": "Optional method of oxygen delivery Pharmacology — Less resistant than atmospheric air which may reduce the patient’s work of breathing by increasing tendency to laminar flow and reducing resistance to turbulent flow",
+    "pharmacologic_action": null,
+    "common_uses": [
+      "Persistent or severe bronchospasm in non-intubated patients with obstructive airway disease or pediatric patients with croup that is unresponsive to all other evidence-based medical interventions."
+    ],
+    "indications_text": "Persistent or severe bronchospasm in non-intubated patients with obstructive airway disease or pediatric patients with croup that is unresponsive to all other evidence-based medical interventions.",
+    "contraindications_text": "None",
+    "trade_names": [
+      "heliox"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary."
+  },
+  {
+    "drug_name": "hydralazine",
+    "display_name": "Hydralazine",
+    "class": "Vasodilator Pharmacology — Direct vasodilator at the level of arterioles, with little effect on veins. Decreases systemic resistance.",
+    "pharmacologic_action": null,
+    "common_uses": [
+      "Severe hypertension with pre-eclampsia symptoms"
+    ],
+    "indications_text": "Severe hypertension with pre-eclampsia symptoms",
+    "contraindications_text": "Hypersensitivity, coronary artery disease, mitral valve rheumatic heart disease. Use with caution in CVA, known renal disease, hypotension",
+    "trade_names": [],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000009915",
+        "class_name": "Unknown Cellular or Molecular Interaction",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175564",
+        "class_name": "Arteriolar Vasodilator",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "hydrocortisone succinate",
+    "display_name": "Hydrocortisone succinate",
+    "class": "Corticosteroid",
+    "pharmacologic_action": "Glucocorticoid; elicits mild mineralocorticoid activity and moderate anti- inflammatory effects; controls or prevents inflammation by controlling rate of protein synthesis, suppressing migration of polymorphonuclear leukocytes (PMNs) and fibroblasts, and reversing capillary permeability",
+    "common_uses": [
+      "For the management of adrenal insufficiency"
+    ],
+    "indications_text": "For the management of adrenal insufficiency",
+    "contraindications_text": "Untreated serious infections (except tuberculous meningitis or septic shock), idiopathic thrombocytopenic purpura, intrathecal administration (injection), documented hypersensitivity",
+    "trade_names": [
+      "cortef",
+      "solucortef"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000134",
+        "class_name": "Lipoxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000159",
+        "class_name": "Glucocorticoid Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175450",
+        "class_name": "Corticosteroid Hormone Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175576",
+        "class_name": "Corticosteroid",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "hydromorphone",
+    "display_name": "Hydromorphone",
+    "class": "Synthetic opiate, opioid analgesic Pharmacology — Narcotic agonist-analgesic of opiate receptors; inhibits ascending pain pathways, thus altering response to pain; increases pain threshold; produces analgesia, respiratory depression, and sedation",
+    "pharmacologic_action": null,
+    "common_uses": [
+      "Management of acute pain"
+    ],
+    "indications_text": "Management of acute pain",
+    "contraindications_text": "Hypersensitivity WARNING: Should be used with caution in the elderly and in patients with hypotension, suspected gastrointestinal obstruction, head injury, and concomitant CNS depressants",
+    "trade_names": [
+      "dilaudid"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000175684",
+        "class_name": "Full Opioid Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175690",
+        "class_name": "Opioid Agonist",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000191866",
+        "class_name": "Opioid mu-Receptor Agonists",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "hydroxocobalamin",
+    "display_name": "Hydroxocobalamin",
+    "class": "Cyanide antidote",
+    "pharmacologic_action": "Vitamin B12 with hydroxyl group complexed to cobalt which can be displaced by cyanide resulting in cyanocobalamin that is renally excreted",
+    "common_uses": [
+      "For the management of cyanide toxicity"
+    ],
+    "indications_text": "For the management of cyanide toxicity",
+    "contraindications_text": "Documented hypersensitivity WARNING: Will cause discoloration of the skin and urine, can interfere with pulse oximetry. Due to its interference with certain diagnostic blood tests, the performance of prehospital phlebotomy is preferable prior to the administration of hydroxocobalamin",
+    "trade_names": [
+      "cyanokit"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000163",
+        "class_name": "Enzyme Interactions",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175429",
+        "class_name": "Antidote",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "ibuprofen",
+    "display_name": "Ibuprofen",
+    "class": "Non-steroidal anti-inflammatory drug (NSAID)",
+    "pharmacologic_action": "Inhibits synthesis of prostaglandins in body tissues by inhibiting at least 2 cyclo-oxygenase (COX) isoenzymes, COX-1 and COX-2. May inhibit chemotaxis, alter lymphocyte activity, decrease proinflammatory cytokine activity, and inhibit neutrophil aggregation; these effects may contribute to anti-inflammatory activity",
+    "common_uses": [
+      "For the acute management of pain or as an antipyretic"
+    ],
+    "indications_text": "For the acute management of pain or as an antipyretic",
+    "contraindications_text": "Aspirin allergy; perioperative pain in setting of coronary artery bypass graft (CABG) surgery; preterm infants with untreated proven or suspected infection; bleeding with active intracranial hemorrhage or GI bleed; thrombocytopenia, coagulation defects, proven or necrotizing enterocolitis, significant renal impairment, congenital heart disease where patency or the patent ductus arteriosus (PDA) is necessary for pulmonary or systemic blood flow",
+    "trade_names": [
+      "motrin"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000160",
+        "class_name": "Cyclooxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175722",
+        "class_name": "Nonsteroidal Anti-inflammatory Drug",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "ipratropium",
+    "display_name": "Ipratropium",
+    "class": "Anticholinergics, respiratory",
+    "pharmacologic_action": "Anticholinergic (parasympatholytic) agent; inhibits vagally mediated reflexes by antagonizing acetylcholine action; prevents increase in intracellular calcium concentration that is caused by interaction of acetylcholine with muscarinic receptors on bronchial smooth muscle",
+    "common_uses": [
+      "For the management of asthma and chronic obstructive pulmonary disease (COPD)"
+    ],
+    "indications_text": "For the management of asthma and chronic obstructive pulmonary disease (COPD)",
+    "contraindications_text": "Documented hypersensitivity to ipratropium, atropine, or derivatives.",
+    "trade_names": [
+      "atrovent"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000125",
+        "class_name": "Cholinergic Muscarinic Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175370",
+        "class_name": "Cholinergic Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175574",
+        "class_name": "Anticholinergic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "isopropyl alcohol",
+    "display_name": "Isopropyl Alcohol",
+    "class": "Secondary alcohol Pharmacology — In addition to traditional role as antiseptic, may be used as antiemetic",
+    "pharmacologic_action": null,
+    "common_uses": [
+      "Nausea and vomiting"
+    ],
+    "indications_text": "Nausea and vomiting",
+    "contraindications_text": "None",
+    "trade_names": [],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary."
+  },
+  {
+    "drug_name": "ketamine",
+    "display_name": "Ketamine",
+    "class": "General anesthetics, systemic",
+    "pharmacologic_action": "Produces dissociative anesthesia. Blocks N-methyl D-aspartate (NMDA) receptor",
+    "common_uses": [
+      "For the management of agitated or violent behavior"
+    ],
+    "indications_text": "For the management of agitated or violent behavior",
+    "contraindications_text": "Hypersensitivity RELATIVE/CONTROVERSIAL CONTRAINDICATIONS: Head trauma, intracranial mass/hemorrhage, hypertension, angina, and stroke, underlying psychiatric disorder WARNING: Overdose may lead to panic attacks and aggressive behavior; rarely seizures, increased ICP, and cardiac arrest. Very similar in chemical makeup to PCP (phencyclidine), but it is shorter acting and less toxic",
+    "trade_names": [
+      "ketalar"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000117",
+        "class_name": "Dopamine Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000020014",
+        "class_name": "Ionotropic Glutamate Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175681",
+        "class_name": "General Anesthetic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "ketoralac",
+    "display_name": "Ketoralac",
+    "class": "Non-steroidal anti-inflammatory drug (NSAID)",
+    "pharmacologic_action": "Inhibits synthesis of prostaglandins in body tissues by inhibiting at least 2 cyclo-oxygenase (COX) isoenzymes, COX-1 and COX-2. May inhibit chemotaxis, alter lymphocyte activity, decrease proinflammatory cytokine activity, and inhibit neutrophil aggregation; these effects may contribute to anti-inflammatory activity",
+    "common_uses": [
+      "For the acute management of moderately severe pain"
+    ],
+    "indications_text": "For the acute management of moderately severe pain",
+    "contraindications_text": "Allergy to aspirin, ketorolac, or other NSAIDS; women who are in active labor or are breastfeeding, significant renal impairment particularly when associated with volume depletion, previous or current GI bleeding, intracranial bleeding, coagulation defects, patients with a high-risk of bleeding",
+    "trade_names": [
+      "toradol"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary."
+  },
+  {
+    "drug_name": "labetalol",
+    "display_name": "Labetalol",
+    "class": "Beta-blockers, alpha activity Pharmacology — Nonselective beta blocker with intrinsic sympathomimetic activity; also, alpha blocker",
+    "pharmacologic_action": null,
+    "common_uses": [
+      "severe hypertension with pre-eclampsia symptoms"
+    ],
+    "indications_text": "severe hypertension with pre-eclampsia symptoms",
+    "contraindications_text": "Asthma or obstructive airway disease, severe bradycardia, second-degree or third- degree heart block (without pacemaker), cardiogenic shock, bronchial asthma, uncompensated cardiac failure, hypersensitivity, sinus bradycardia, sick sinus syndrome without permanent pacemaker; conditions associated with prolonged and severe hypotension. Use with caution in patients taking calcium channel blockers. Hypotension with or without syncope may occur, monitor. Consider pre- existing conditions, such as, sick sinus syndrome before initiating therapy. Use caution in patients with history of severe anaphylaxis to allergens; patients taking beta-blockers may become more sensitive to repeated challenges; treatment with epinephrine in patients taking beta-blockers may be ineffective or promote undesirable effects. Use with caution in patients with myasthenia gravis, psoriasis, or psychiatric illness (may cause or exacerbate CNS depression)",
+    "trade_names": [
+      "trandate"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
     "classes": [
       {
         "class_id": "N0000000161",
         "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009919",
+        "class_name": "Adrenergic alpha1-Antagonists",
         "class_type": "MOA"
       },
       {
@@ -97,6 +1337,330 @@
       }
     ],
     "contraindicated_classes": []
+  },
+  {
+    "drug_name": "lidocaine",
+    "display_name": "Lidocaine",
+    "class": "Class Ib antidysrhythmics",
+    "pharmacologic_action": "Class 1b antidysrhythmic; combines with fast sodium channels and thereby inhibits recovery after repolarization, resulting in decreasing myocardial excitability and conduction velocity",
+    "common_uses": [
+      "For the management of refractory or recurrent ventricular fibrillation or pulseless VT"
+    ],
+    "indications_text": "For the management of refractory or recurrent ventricular fibrillation or pulseless VT",
+    "contraindications_text": "Hypersensitivity to lidocaine or amide-type local anesthetic, Adams-Stokes syndrome, SA/AV/intraventricular heart block in the absence of artificial pacemaker. nitro (CHF), cardiogenic shock, second- and third-degree heart block (if no pacemaker is present), Wolff-Parkinson- White Syndrome",
+    "trade_names": [
+      "lidocaine cv",
+      "lidopen",
+      "xylocaine"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000180",
+        "class_name": "Sodium Channel Interactions",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175426",
+        "class_name": "Antiarrhythmic",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175682",
+        "class_name": "Amide Local Anesthetic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "lorazepam",
+    "display_name": "Lorazepam",
+    "class": "Anticonvulsants, other; antianxiety agent; anxiolytics; benzodiazepines",
+    "pharmacologic_action": "Sedative hypnotic with short onset of effects and relatively long half-life; by increasing the action of gamma-aminobutyric acid (GABA), which is a major inhibitory neurotransmitter in the brain, lorazepam may depress all levels of the CNS, including limbic and reticular formation",
+    "common_uses": [
+      "For the management of seizures",
+      "uncontrolled shivering in hypothermia",
+      "and for the management of agitated or violent patients suffering behavioral emergencies"
+    ],
+    "indications_text": "For the management of seizures, uncontrolled shivering in hypothermia, and for the management of agitated or violent patients suffering behavioral emergencies",
+    "contraindications_text": "Documented hypersensitivity, acute narrow angle glaucoma, severe respiratory depression, sleep apnea",
+    "trade_names": [
+      "ativan"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000118",
+        "class_name": "GABA A Modulators",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175694",
+        "class_name": "Benzodiazepine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "magnesium sulfate",
+    "display_name": "Magnesium sulfate",
+    "class": "Class V antidysrhythmic, electrolyte",
+    "pharmacologic_action": "Depresses CNS, blocks peripheral neuromuscular transmission, produces anticonvulsant effects; decreases amount of acetylcholine released at end-plate by motor nerve impulse. Slows rate of sinoatrial (SA) node impulse formation in myocardium and prolongs conduction time. Promotes movement of calcium, potassium, and sodium in and out of cells and stabilizes excitable membranes",
+    "common_uses": [
+      "For the management of torsades de pointes or for severe bronchoconstriction with impending respiratory failure",
+      "seizure during the third trimester of pregnancy or in the postpartum patient"
+    ],
+    "indications_text": "For the management of torsades de pointes or for severe bronchoconstriction with impending respiratory failure, seizure during the third trimester of pregnancy or in the postpartum patient",
+    "contraindications_text": "Hypersensitivity, myocardial damage, diabetic coma, heart block, hypermagnesemia, hypercalcemia",
+    "trade_names": [
+      "mgso4"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000163",
+        "class_name": "Enzyme Interactions",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000220",
+        "class_name": "Electrolyte Activity",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000226",
+        "class_name": "Acid-Base Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "methylprednisolone",
+    "display_name": "Methylprednisolone",
+    "class": "Corticosteroid, anti-inflammatory agent",
+    "pharmacologic_action": "Potent glucocorticoid with minimal to no mineralocorticoid activity. Modulates carbohydrate, protein, and lipid metabolism and maintenance of fluid and electrolyte homeostasis. Controls or prevents inflammation by controlling rate of protein synthesis, suppressing migration of polymorphonuclear leukocytes (PMNs) and fibroblasts, reversing capillary permeability, and stabilizing lysosomes at cellular level",
+    "common_uses": [
+      "For the management of acute bronchospastic disease as well as for adrenal insufficiency"
+    ],
+    "indications_text": "For the management of acute bronchospastic disease as well as for adrenal insufficiency",
+    "contraindications_text": "Untreated serious infections, documented hypersensitivity, IM route is contraindicated in idiopathic thrombocytopenic purpura, traumatic brain injury (high doses)",
+    "trade_names": [
+      "depomedrol",
+      "medrol",
+      "medrol dosepak",
+      "solumedrol"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000134",
+        "class_name": "Lipoxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000159",
+        "class_name": "Glucocorticoid Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175450",
+        "class_name": "Corticosteroid Hormone Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175576",
+        "class_name": "Corticosteroid",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "metoclopramide",
+    "display_name": "Metoclopramide",
+    "class": "Antiemetic agent, prokinetic agent",
+    "pharmacologic_action": "Blocks dopamine receptors (at high dose) and serotonin receptors in chemoreceptor trigger zone of CNS; and sensitizes tissues to acetylcholine; increases upper GI motility but not secretions; increases lower esophageal sphincter tone",
+    "common_uses": [
+      "For the management of nausea and vomiting"
+    ],
+    "indications_text": "For the management of nausea and vomiting",
+    "contraindications_text": "Hypersensitivity to metoclopramide or procainamide, GI hemorrhage, mechanical obstruction, perforation, history of seizures, pheochromocytoma. Other drugs causing extrapyramidal symptoms (e.g., phenothiazines, butyrophenones)",
+    "trade_names": [
+      "metozolv odt",
+      "reglan"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175799",
+        "class_name": "Dopamine D2 Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175800",
+        "class_name": "Dopamine-2 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "metoprolol",
+    "display_name": "Metoprolol",
+    "class": "Beta blocker, beta-1 selective",
+    "pharmacologic_action": "Blocks response to beta-adrenergic stimulation; cardio selective for beta-1 receptors at low doses, with little or no effect on beta-2 receptors",
+    "common_uses": [
+      "For management of narrow complex tachycardias"
+    ],
+    "indications_text": "For management of narrow complex tachycardias",
+    "contraindications_text": "Hypersensitivity. When administered for hypertension or angina: Sinus bradycardia, 2nd or 3rd degree AV block, cardiogenic shock, sick sinus syndrome (unless permanent pacemaker in place), severe peripheral vascular disease, pheochromocytoma. When administered for myocardial infarction: Severe sinus bradycardia with heart rate less than 45 beats/minute, systolic BP less than 100 mmHg, significant first-degree heart block (PR interval at least 0.24 seconds), moderate-to- severe cardiac failure WARNING: May cause 1st, 2nd, or 3rd degree AV block",
+    "trade_names": [
+      "lopressor",
+      "toprol xl"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000161",
+        "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009923",
+        "class_name": "Adrenergic beta1-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175556",
+        "class_name": "beta-Adrenergic Blocker",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "midazolam",
+    "display_name": "Midazolam",
+    "class": "Anticonvulsants, other; antianxiety agent; anxiolytics; benzodiazepines",
+    "pharmacologic_action": "Binds receptors at several sites within the CNS, including the limbic system and reticular formation; effects may be mediated through gabba-aminobutyric acid (GABA) receptor system; increase in neuronal membrane permeability to chloride ions enhances the inhibitory effects of GABA; the shift in chloride ions causes hyperpolarization (less excitability) and stabilization of the neuronal membrane",
+    "common_uses": [
+      "For the management of seizures",
+      "uncontrolled shivering in hypothermia",
+      "and for the management of agitated or violent patients suffering behavioral emergencies"
+    ],
+    "indications_text": "For the management of seizures, uncontrolled shivering in hypothermia, and for the management of agitated or violent patients suffering behavioral emergencies",
+    "contraindications_text": "Documented hypersensitivity, severe respiratory depression, sleep apnea WARNING: May cause respiratory depression, arrest, or apnea",
+    "trade_names": [
+      "versed"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000118",
+        "class_name": "GABA A Modulators",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175694",
+        "class_name": "Benzodiazepine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [],
+    "label_contraindications": [
+      {
+        "kind": "drug",
+        "target": "fentanyl",
+        "severity": "CONTRAINDICATED",
+        "section": "boxed_warning",
+        "evidence": "Severe hypotension and seizures have been reported following rapid IV administration, particularly with concomitant use of fentanyl (see DOSAGE AND ADMINISTRATION for complete information).",
+        "set_id": "54ed43b2-bad1-4b45-e063-6294a90a793a",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=54ed43b2-bad1-4b45-e063-6294a90a793a"
+      }
+    ]
+  },
+  {
+    "drug_name": "morphine sulfate",
+    "display_name": "Morphine Sulfate",
+    "class": "Opioid analgesic",
+    "pharmacologic_action": "Narcotic agonist-analgesic of opiate receptors; inhibits ascending pain pathways, thus altering response to pain; produces analgesia, respiratory depression, and sedation; suppresses cough by acting centrally in medulla",
+    "common_uses": [
+      "Management of acute pain"
+    ],
+    "indications_text": "Management of acute pain",
+    "contraindications_text": "Hypersensitivity, paralytic ileus, toxin-mediated diarrhea, respiratory depression, acute or severe bronchial asthma, upper airway obstruction, GI obstruction (extended release), hypercarbia (immediate release tablets/solution), upper airway obstruction (epidural/intrathecal), heart failure due to chronic lung disease, head injuries, brain tumors, deliriums tremens, seizure disorders, during labor when premature birth anticipated (injectable formulation), cardiac arrhythmia, increased intracranial or cerebrospinal pressure, acute alcoholism, use after biliary tract surgery, surgical anastomosis (suppository formulation)",
+    "trade_names": [
+      "astramorph",
+      "avinza",
+      "depodur",
+      "duramorph",
+      "infumorph",
+      "kadian",
+      "ms contin",
+      "mso4"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000175684",
+        "class_name": "Full Opioid Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175690",
+        "class_name": "Opioid Agonist",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000191866",
+        "class_name": "Opioid mu-Receptor Agonists",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000000184",
+        "class_name": "Monoamine Oxidase Inhibitors",
+        "class_type": "MOA"
+      }
+    ],
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Monoamine Oxidase Inhibitors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Concurrent use of monoamine oxidase inhibitors (MAOIs) or use of MAOIs within the last 14 days [ see Warnings and Precautions ( 5.8 ) and Drug Interactions ( 7 ) ].",
+        "set_id": "367d508b-3226-42a9-8dc6-f67cdc9979f3",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=367d508b-3226-42a9-8dc6-f67cdc9979f3"
+      }
+    ]
   },
   {
     "drug_name": "naloxone",
@@ -121,66 +1685,49 @@
         "class_type": "EPC"
       }
     ],
-    "contraindicated_classes": []
+    "contraindicated_classes": [],
+    "display_name": "Naloxone",
+    "pharmacologic_action": "Competitive opioid antagonist; synthetic congener of oxymorphone",
+    "indications_text": "Reversal of acute opioid toxicity",
+    "contraindications_text": "Hypersensitivity WARNING: Administration of naloxone can result in the sudden onset of opiate withdrawal (agitation, tachycardia, pulmonary edema, nausea, vomiting, and, in neonates, seizures)",
+    "trade_names": [
+      "narcan"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)"
   },
   {
-    "drug_name": "aspirin",
-    "class": "Antiplatelet / NSAID",
+    "drug_name": "nifedipine",
+    "display_name": "Nifedipine",
+    "class": "Calcium channel blocker",
+    "pharmacologic_action": "Calcium-channel blocker; inhibits transmembrane influx of extracellular calcium ions across myocardial and vascular smooth muscle cell membranes without changing serum calcium concentrations; this results in inhibition of cardiac and vascular smooth muscle contraction, thereby dilating main coronary and systemic arteries. Vasodilation with decreased peripheral resistance and increased heart rate",
     "common_uses": [
-      "Suspected acute coronary syndrome / chest pain"
+      "For the management of high-altitude pulmonary edema (HAPE)"
     ],
-    "adult_dose": "162-325 mg PO (chewed), non-enteric coated preferred.",
-    "pediatric_dose": "Not indicated for pediatric field use.",
-    "contraindicated_with": [
-      "active gi bleed",
-      "aspirin allergy"
+    "indications_text": "For the management of high-altitude pulmonary edema (HAPE)",
+    "contraindications_text": "Hypersensitivity to nifedipine or other calcium-channel blockers, cardiogenic shock, concomitant administration with strong CYP3A4 inducers (e.g., rifampin, rifabutin, phenobarbital, phenytoin, carbamazepine, St. John's wort) significantly reduces nifedipine efficacy, Immediate release preparation (sublingually or orally) for urgent or emergent hypertension",
+    "trade_names": [
+      "adalat cc",
+      "nifedical",
+      "procardia"
     ],
-    "interaction_notes": {
-      "active gi bleed": "Increased bleeding risk -- withhold and consult medical control.",
-      "aspirin allergy": "Do not administer -- risk of anaphylaxis/bronchospasm."
-    },
-    "notes": "SEED/DEMO dataset only.",
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
     "classes": [
       {
-        "class_id": "N0000000160",
-        "class_name": "Cyclooxygenase Inhibitors",
+        "class_id": "N0000000069",
+        "class_name": "Calcium Channel Antagonists",
         "class_type": "MOA"
       },
       {
-        "class_id": "N0000175578",
-        "class_name": "Platelet Aggregation Inhibitor",
-        "class_type": "EPC"
-      },
-      {
-        "class_id": "N0000175722",
-        "class_name": "Nonsteroidal Anti-inflammatory Drug",
-        "class_type": "EPC"
-      }
-    ],
-    "contraindicated_classes": []
-  },
-  {
-    "drug_name": "albuterol",
-    "class": "Beta-2 agonist bronchodilator",
-    "common_uses": [
-      "Asthma",
-      "COPD exacerbation",
-      "Bronchospasm"
-    ],
-    "adult_dose": "2.5 mg nebulized, may repeat.",
-    "pediatric_dose": "2.5 mg nebulized (same as adult for most protocols; confirm local protocol for <2 years).",
-    "contraindicated_with": [],
-    "interaction_notes": {},
-    "notes": "Can cause tachycardia/tremor -- monitor cardiac patients closely. SEED/DEMO dataset only.",
-    "classes": [
-      {
-        "class_id": "N0000009922",
-        "class_name": "Adrenergic beta2-Agonists",
+        "class_id": "N0000020065",
+        "class_name": "L-Calcium Channel Receptor Antagonists",
         "class_type": "MOA"
       },
       {
-        "class_id": "N0000175779",
-        "class_name": "beta2-Adrenergic Agonist",
+        "class_id": "N0000175421",
+        "class_name": "Dihydropyridine Calcium Channel Blocker",
         "class_type": "EPC"
       }
     ],
@@ -227,7 +1774,540 @@
         "class_name": "Phosphodiesterase 5 Inhibitors",
         "class_type": "MOA"
       }
+    ],
+    "display_name": "Nitroglycerin",
+    "pharmacologic_action": "Organic nitrate which causes systemic venodilation, decreasing preload. Cellular mechanism: nitrate enters vascular smooth muscle and converted to nitric oxide (NO) leading to activation of cyclic guanosine monophosphate (cGMP) and vasodilation. Relaxes smooth muscle via dose-dependent dilation of arterial and venous beds to reduce both preload and afterload, and myocardial O2 demand. Also improves coronary collateral circulation. Lower BP, increases heart rate, occasional paradoxical bradycardia",
+    "indications_text": "As an anti-anginal medication for the management of chest pain as well as a reducer of preload for patients suffering from acute pulmonary edema",
+    "contraindications_text": "Hypersensitivity, acute myocardial infarction, severe anemia, recent use of erectile dysfunction medications (sildenafil (Viagra® — within last 24 hours), tadalafil (Cialis® — within last 48 hours), vardenafil (Levitra® — within last 48 hours), or other phopsphodiesterase-5 inhibitors). There is potential for dangerous hypotension, narrow angle glaucoma (controversial: may not be clinically significant). Nitrates are contraindicated in the presence of hypotension (SBP less than 90 mmHg or ≥30 mmHg below baseline), extreme bradycardia (less than 50 BPM), tachycardia in the absence of heart failure (greater than 100 BPM), and right ventricular infarction",
+    "trade_names": [
+      "nitrolingual pumpspray",
+      "nitroquick",
+      "nitrostat"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Guanylate Cyclase Stimulators",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "class",
+        "target": "Phosphodiesterase 5 Inhibitor",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "class",
+        "target": "Phosphodiesterase 5 Inhibitors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "drug",
+        "target": "avanafil",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "drug",
+        "target": "sildenafil",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "drug",
+        "target": "tadalafil",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      },
+      {
+        "kind": "drug",
+        "target": "vardenafil",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Use of phosphodiesterase type 5 (PDE-5) inhibitors, such as avanafil, sildenafil, tadalafil, or vardenafil, or soluble guanylate cyclase (sGC) stimulators.",
+        "set_id": "41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=41fe1f25-bfd0-4eaf-973d-bdb6b5d70f93"
+      }
     ]
+  },
+  {
+    "drug_name": "nitrous oxide",
+    "display_name": "Nitrous Oxide",
+    "class": "Weak inhalational anesthetic",
+    "pharmacologic_action": "Its analgesic mechanism of action is described as opioid in nature and may involve a number of spinal neuromodulators. The anxiolytic effect is similar to that of benzodiazepine and may involve gamma aminobutyric (GABA) receptors. The anesthesia mechanism may involve GABA and possibly N-methyl-D-aspartate receptors as well.[6] In general, the effect of nitrous oxide ceases as soon as the inhalation stops, with no residual effect",
+    "common_uses": [
+      "Analgesia in the patient who is capable of self-administration of this medication"
+    ],
+    "indications_text": "Analgesia in the patient who is capable of self-administration of this medication",
+    "contraindications_text": "Significant respiratory compromise, suspected abnormal air-filled cavities (e.g., pneumothorax, bowel obstruction, air embolism) RELATIVE CONTRAINDICATIONS: History of stroke, hypotension, pregnancy, known cardiac conditions, known vitamin B12 deficiency",
+    "trade_names": [
+      "n2o"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000120",
+        "class_name": "Nitric Oxide Donors",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": [],
+    "class_exclusions": [
+      "Nitric Oxide Donors"
+    ],
+    "class_exclusion_note": "RxClass (MED-RT) assigns nitrous oxide the MoA 'Nitric Oxide Donors'. Excluded for interaction matching: N2O is an inhaled anaesthetic, not an organic nitrate or nitrite, and does not carry the PDE5-inhibitor interaction that nitroglycerin and amyl nitrite do. Without this, every PDE5 inhibitor's FDA labelling flagged against Entonox."
+  },
+  {
+    "drug_name": "norepinephrine",
+    "display_name": "Norepinephrine",
+    "class": "Alpha/beta adrenergic agonist",
+    "pharmacologic_action": "Strong beta-1 and alpha-adrenergic effects and moderate beta-2 effects, which increase cardiac output and heart rate, decrease renal perfusion and peripheral vascular resistance, and cause variable BP effects",
+    "common_uses": [
+      "As a pressor agent used in the management of shock"
+    ],
+    "indications_text": "As a pressor agent used in the management of shock",
+    "contraindications_text": "Hypersensitivity, hypotension due to blood volume deficit, peripheral vascular thrombosis (except for lifesaving procedures) RELATIVE CONTRAINDICATIONS: concomitant use with some general anesthetics: chloroform, trichloroethylene, cyclopropane, halothane All Rights Reserved V.08 -16 272 WARNING: Norepinephrine is a vesicant and can cause severe tissue damage if extravasation occurs. Do not use in the same IV line as alkaline solutions as these may deactivate it",
+    "trade_names": [
+      "levarterenol",
+      "levophed"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000209",
+        "class_name": "Adrenergic alpha-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009921",
+        "class_name": "Adrenergic beta1-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175570",
+        "class_name": "Catecholamine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "olanzapine",
+    "display_name": "Olanzapine",
+    "class": "Antipsychotic, second generation, antimanic agents",
+    "pharmacologic_action": "May act through combination of dopamine and serotonin type 2 receptor site antagonism",
+    "common_uses": [
+      "For the management of agitated or violent patients suffering a behavioral emergency"
+    ],
+    "indications_text": "For the management of agitated or violent patients suffering a behavioral emergency",
+    "contraindications_text": "Documented hypersensitivity WARNING: Patients are at risk for severe sedation (including coma) or delirium after each injection and must be observed for at least 3 hours in registered facility with ready access to emergency response services. Patients are at significant risk of severe sedation when olanzapine is administered with benzodiazepines or to patients who have are taking benzodiazepines",
+    "trade_names": [
+      "zyprexa"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000074",
+        "class_name": "GABA A Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000099",
+        "class_name": "Adrenergic alpha-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000125",
+        "class_name": "Cholinergic Muscarinic Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000130",
+        "class_name": "Serotonin Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000161",
+        "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000190",
+        "class_name": "Histamine H1 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175430",
+        "class_name": "Atypical Antipsychotic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "ondansetron",
+    "display_name": "Ondansetron",
+    "class": "Antiemetic, selective 5-HT3 antagonist",
+    "pharmacologic_action": "Mechanism not fully characterized; selective 5-HT3 receptor antagonist; binds to 5-HT3 receptors both in periphery and in CNS, with primary effects in GI tract. Has no effect on dopamine receptors and therefore does not cause extrapyramidal symptoms",
+    "common_uses": [
+      "For the management of nausea or vomiting NOTE: EKG monitoring is recommended in patients who have electrolyte abnormalities",
+      "CHF",
+      "or bradyarrhythmias or who are also receiving other medications that cause QT prolongation"
+    ],
+    "indications_text": "For the management of nausea or vomiting NOTE: EKG monitoring is recommended in patients who have electrolyte abnormalities, CHF, or bradyarrhythmias or who are also receiving other medications that cause QT prolongation",
+    "contraindications_text": "Hypersensitivity, coadministration with apomorphine; combination reported to cause profound hypotension and loss of consciousness WARNING: May cause dose-dependent QT prolongation, avoid in patients with congenital long QT syndrome",
+    "trade_names": [
+      "zofran",
+      "zofran odt",
+      "zuplenz"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000090",
+        "class_name": "Serotonin 5HT-3 Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175817",
+        "class_name": "Serotonin 3 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175818",
+        "class_name": "Serotonin-3 Receptor Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "oxymetazoline",
+    "display_name": "Oxymetazoline",
+    "class": "Decongestants, intranasal",
+    "pharmacologic_action": "Alpha-adrenergic agonist; stimulates alpha-adrenergic receptors and produces vasoconstriction in the arterioles of the nasal mucosa",
+    "common_uses": [
+      "For the management of epistaxis in the patient suffering facial trauma"
+    ],
+    "indications_text": "For the management of epistaxis in the patient suffering facial trauma",
+    "contraindications_text": "Hypersensitivity",
+    "trade_names": [
+      "afrin",
+      "dristan 12 hr",
+      "duramist plus",
+      "sinarest 12 hour"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000209",
+        "class_name": "Adrenergic alpha-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000192562",
+        "class_name": "Vasoconstrictor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "potassium iodide",
+    "display_name": "Potassium iodide",
+    "class": "Antidotes, other; antithyroid agents",
+    "pharmacologic_action": "As a thyroid protective agent: Systemically circulating potassium iodide is readily taken up by thyroid gland by sodium/iodide transporter in basal membrane; blocking the thyroid uptake of radioactive isotopes of iodine; concentration gradient of thyroid gland to plasma is 20—50:1",
+    "common_uses": [
+      "Indicated during environmental radiation emergency to block uptake of radioactive iodine isotopes in thyroid and reduce risk of thyroid cancer"
+    ],
+    "indications_text": "Indicated during environmental radiation emergency to block uptake of radioactive iodine isotopes in thyroid and reduce risk of thyroid cancer",
+    "contraindications_text": "Iodine sensitivity (although allergy to radiocontrast media, contact dermatitis from iodine-containing antibacterials, allergy to seafood should not be considered evidence of potassium iodide allergy), hyperthyroidism, respiratory failure",
+    "trade_names": [
+      "pima syrup",
+      "sski",
+      "thyrosafe",
+      "thyroshield"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000009915",
+        "class_name": "Unknown Cellular or Molecular Interaction",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "pralidoxime chloride",
+    "display_name": "Pralidoxime chloride (2-PAM)",
+    "class": "Cholinergic, toxicity antidote",
+    "pharmacologic_action": "Binds to organophosphates and breaks alkyl phosphate-cholinesterase bond to restore activity of acetylcholinesterase",
+    "common_uses": [
+      "For the management of toxicity caused by organophosphate insecticides and related nerve gases (e.g.",
+      "tabun",
+      "sarin",
+      "soman)"
+    ],
+    "indications_text": "For the management of toxicity caused by organophosphate insecticides and related nerve gases (e.g., tabun, sarin, soman)",
+    "contraindications_text": "Documented hypersensitivity",
+    "trade_names": [
+      "duodote",
+      "pralidoxime auto injector",
+      "protopam"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000080",
+        "class_name": "Cholinesterase Reactivators",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175742",
+        "class_name": "Cholinesterase Reactivator",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "prednisolone",
+    "display_name": "Prednisolone",
+    "class": "Corticosteroid",
+    "pharmacologic_action": "Glucocorticosteroid which also elicits mild mineralocorticoid activity and dose dependent moderate-to-significant anti-inflammatory effects",
+    "common_uses": [
+      "WILL NEED TO REVIEW EVERY PLACE PREDNISONE IS MENTIONED IN THE PROTOCOLS"
+    ],
+    "indications_text": "WILL NEED TO REVIEW EVERY PLACE PREDNISONE IS MENTIONED IN THE PROTOCOLS",
+    "contraindications_text": "Avoid in untreated severe infections, documented hypersensitivity, or active varicella and fungal infections",
+    "trade_names": [
+      "flopred",
+      "millipred",
+      "orapred",
+      "pediapred",
+      "prelone syrup",
+      "veripred"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000134",
+        "class_name": "Lipoxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000159",
+        "class_name": "Glucocorticoid Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175450",
+        "class_name": "Corticosteroid Hormone Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175576",
+        "class_name": "Corticosteroid",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "prednisone",
+    "display_name": "Prednisone",
+    "class": "Corticosteroid",
+    "pharmacologic_action": "Glucocorticosteroid which also elicits mild mineralocorticoid activity and dose dependent moderate-to-significant anti-inflammatory effects",
+    "common_uses": [
+      "WILL NEED TO REVIEW EVERY PLACE PREDNISONE IS MENTIONED IN THE PROTOCOLS"
+    ],
+    "indications_text": "WILL NEED TO REVIEW EVERY PLACE PREDNISONE IS MENTIONED IN THE PROTOCOLS",
+    "contraindications_text": "Avoid in untreated severe infections, documented hypersensitivity, or active varicella and fungal infections",
+    "trade_names": [
+      "deltasone",
+      "rayos",
+      "sterapred"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000134",
+        "class_name": "Lipoxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000159",
+        "class_name": "Glucocorticoid Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175450",
+        "class_name": "Corticosteroid Hormone Receptor Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175576",
+        "class_name": "Corticosteroid",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "procainamide",
+    "display_name": "Procainamide",
+    "class": "Class Ia antidysrhythmic",
+    "pharmacologic_action": "Class Ia (membrane stabilizing) antidysrhythmic agent; inhibits recovery after repolarization resulting in decreasing myocardial excitability and conduction velocity. Direct membrane depressant that decreases conduction velocity, prolongs refractoriness, decreases automaticity and reduces repolarization abnormalities",
+    "common_uses": [
+      "For the management of stable patients with regular",
+      "wide complex tachycardia"
+    ],
+    "indications_text": "For the management of stable patients with regular, wide complex tachycardia",
+    "contraindications_text": "Hypersensitivity to procainamide or other ingredients, complete heart block, second- or third-degree AV block, systemic lupus erythematosus (SLE), torsades de pointes RELATIVE CONTRAINDICATION: Patients with QT prolongation",
+    "trade_names": [
+      "procanbid",
+      "pronestyl"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000009915",
+        "class_name": "Unknown Cellular or Molecular Interaction",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175426",
+        "class_name": "Antiarrhythmic",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "prochlorperazine",
+    "display_name": "Prochlorperazine",
+    "class": "Antiemetic agent; antipsychotics, phenothiazine",
+    "pharmacologic_action": "Antiemetic: antidopaminergic effect, blocking dopamine receptors in the brain, blocking vagus nerve in GI tract. Antipsychotic: Blocking mesolimbic dopamine receptors, and blocking alpha-adrenergic receptors (D1 and D2) in brain",
+    "common_uses": [
+      "For the management of nausea and vomiting"
+    ],
+    "indications_text": "For the management of nausea and vomiting",
+    "contraindications_text": "Documented hypersensitivity to phenothiazines, coma, severe CNS depression, concurrent use of large amounts of CNS depressants, poorly controlled seizure disorder, subcortical brain damage, pediatric surgery, children less than 2 years or weighing less than 9 kg",
+    "trade_names": [
+      "compazine"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175746",
+        "class_name": "Phenothiazine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "propranolol",
+    "class": "Non-selective beta-blocker",
+    "common_uses": [
+      "Hypertension",
+      "Arrhythmia",
+      "Migraine prophylaxis (not an EMS field use)"
+    ],
+    "adult_dose": "Not typically field-administered by EMS; relevant here as a patient home medication that affects other drug choices.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [
+      "epinephrine"
+    ],
+    "interaction_notes": {
+      "epinephrine": "See epinephrine entry -- unopposed alpha effects risk."
+    },
+    "notes": "SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000000161",
+        "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009923",
+        "class_name": "Adrenergic beta1-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009924",
+        "class_name": "Adrenergic beta2-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175556",
+        "class_name": "beta-Adrenergic Blocker",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "sildenafil",
@@ -257,6 +2337,146 @@
         "class_type": "EPC"
       }
     ],
+    "contraindicated_classes": [],
+    "display_name": "Sildenafil",
+    "pharmacologic_action": "Inhibits PDE-5, increasing cyclic guanosine monophosphate (cGMP) to allow smooth-muscle relaxation",
+    "indications_text": "As an adjunct to descent in the management of high-altitude pulmonary edema (HAPE)",
+    "contraindications_text": "Concomitant use of organic nitrates in any form (e.g., nitroglycerin, isosorbide, illicit “poppers”) either regularly or intermittently, increases risk of severe or potentially fatal hypotension, hypersensitivity WARNING: Hypotension may occur due to vasodilation",
+    "trade_names": [
+      "revatio",
+      "viagra"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Guanylate Cyclase Stimulators",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration with guanylate cyclase (GC) stimulators, such as riociguat ( 4.3 ) 4.1 Nitrates Consistent with its known effects on the nitric oxide/cGMP pathway [see Clinical Pharmacology (12.1 , 12.2) ], sildenafil tablets was shown to potentiate the hypotensive effects of nitrates, and its administration to patients who are using nitric oxide donors such as organic nitrates or organic nitrites ",
+        "set_id": "1883785c-a1a4-48fe-b722-afacf2875ca8",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1883785c-a1a4-48fe-b722-afacf2875ca8"
+      },
+      {
+        "kind": "class",
+        "target": "Nitrate Vasodilator",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of sildenafil tablets to patients using nitric oxide donors, such as organic nitrates or organic nitrites in any form.",
+        "set_id": "1883785c-a1a4-48fe-b722-afacf2875ca8",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1883785c-a1a4-48fe-b722-afacf2875ca8"
+      },
+      {
+        "kind": "class",
+        "target": "Nitric Oxide Donors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of sildenafil tablets to patients using nitric oxide donors, such as organic nitrates or organic nitrites in any form.",
+        "set_id": "1883785c-a1a4-48fe-b722-afacf2875ca8",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1883785c-a1a4-48fe-b722-afacf2875ca8"
+      }
+    ]
+  },
+  {
+    "drug_name": "sodium bicarbonate",
+    "display_name": "Sodium Bicarbonate",
+    "class": "Antidote, other",
+    "pharmacologic_action": "Increases blood and urinary pH by releasing a bicarbonate ion, which in turn neutralizes hydrogen ion concentrations",
+    "common_uses": [
+      "For the management of cardiac arrest in cases in which either hyperkalemia or tricyclic antidepressant (TCA) overdose are suspected as contributory",
+      "QRS prolongation in known or suspected TCA overdose"
+    ],
+    "indications_text": "For the management of cardiac arrest in cases in which either hyperkalemia or tricyclic antidepressant (TCA) overdose are suspected as contributory, QRS prolongation in known or suspected TCA overdose",
+    "contraindications_text": "Documented hypersensitivity, severe pulmonary edema, known alkalosis, hypernatremia, or hypocalcemia",
+    "trade_names": [
+      "bicarb"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000220",
+        "class_name": "Electrolyte Activity",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000226",
+        "class_name": "Acid-Base Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "sodium nitrite",
+    "display_name": "Sodium Nitrite",
+    "class": "Cyanide antidote",
+    "pharmacologic_action": "Nitrites create methemoglobins to bind to cyanide",
+    "common_uses": [
+      "For the management of cyanide toxicity"
+    ],
+    "indications_text": "For the management of cyanide toxicity",
+    "contraindications_text": "Documented hypersensitivity, suspected or confirmed smoke inhalation and/or carbon monoxide poisoning WARNING: There is a risk of worsening hypoxia due to methemoglobin formation. In addition, sodium nitrite can cause serious adverse reactions and death from hypotension and methemoglobin formation. Monitor to ensure adequate perfusion and oxygenation during treatment with sodium nitrite",
+    "trade_names": [
+      "nithiodote"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary."
+  },
+  {
+    "drug_name": "sodium thiosulfate",
+    "display_name": "Sodium Thiosulfate",
+    "class": "Cyanide antidote",
+    "pharmacologic_action": "Thiosulfate is sulfur donor utilized by rhodanese to convert cyanide to less toxic thiocyanate",
+    "common_uses": [
+      "For the management of cyanide toxicity"
+    ],
+    "indications_text": "For the management of cyanide toxicity",
+    "contraindications_text": "Documented hypersensitivity",
+    "trade_names": [
+      "nithiodote"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000087",
+        "class_name": "Chelating Activity",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "sorbitol",
+    "display_name": "Sorbitol",
+    "class": "Laxatives, osmotic",
+    "pharmacologic_action": "Polyalcoholic sugar with hyperosmotic effects",
+    "common_uses": [
+      "Administered for the management of patients suffering from toxic ingestions"
+    ],
+    "indications_text": "Administered for the management of patients suffering from toxic ingestions",
+    "contraindications_text": "Acute abdominal pain, nausea, vomiting, or other symptoms of appendicitis or undiagnosed abdominal pain, documented hypersensitivity WARNING: Sorbitol is no longer recommended to be given with activated charcoal",
+    "trade_names": [
+      "sorbitol"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
+    "classes": [
+      {
+        "class_id": "N0000000065",
+        "class_name": "Physiochemical Activity",
+        "class_type": "MOA"
+      }
+    ],
     "contraindicated_classes": []
   },
   {
@@ -284,7 +2504,49 @@
         "class_type": "EPC"
       }
     ],
-    "contraindicated_classes": []
+    "contraindicated_classes": [],
+    "display_name": "Tadalafil",
+    "pharmacologic_action": "Pulmonary arterial hypertension (PAH): inhibits PDE-5, increasing cyclic guanosine monophosphate (cGMP) to allow relaxation of pulmonary vascular smooth-muscle cells and vasodilation of pulmonary vasculature",
+    "indications_text": "As an adjunct to descent in the management of high-altitude pulmonary edema (HAPE)",
+    "contraindications_text": "Concomitant use of any form of organic nitrates (e.g., nitroglycerin, isosorbide dinitrate, isosorbide mononitrate, illicit \"poppers\"), either regularly or intermittently; may potentiate hypotensive effect of nitrates. Hypersensitivity, including Stevens-Johnson syndrome and exfoliative dermatitis WARNING: Hypotension may occur due to vasodilation",
+    "trade_names": [
+      "adcirca",
+      "cialis"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Guanylate Cyclase Stimulators",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration with guanylate cyclase (GC) stimulators, such as riociguat ( 4.3 ). 4.1 Nitrates Administration of tadalafil tablets to patients who are using any form of organic nitrate, either regularly and/or intermittently, is contraindicated.",
+        "set_id": "05640a4d-afb7-42ae-a5bb-77dbc8412356",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=05640a4d-afb7-42ae-a5bb-77dbc8412356"
+      },
+      {
+        "kind": "class",
+        "target": "Nitrate Vasodilator",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of tadalafil tablets to patients using any form of organic nitrate is contraindicated.",
+        "set_id": "05640a4d-afb7-42ae-a5bb-77dbc8412356",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=05640a4d-afb7-42ae-a5bb-77dbc8412356"
+      },
+      {
+        "kind": "class",
+        "target": "Nitric Oxide Donors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Administration of tadalafil tablets to patients using any form of organic nitrate is contraindicated.",
+        "set_id": "05640a4d-afb7-42ae-a5bb-77dbc8412356",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=05640a4d-afb7-42ae-a5bb-77dbc8412356"
+      }
+    ]
   },
   {
     "drug_name": "vardenafil",
@@ -315,118 +2577,121 @@
         "class_name": "Guanylate Cyclase Stimulators",
         "class_type": "MOA"
       }
+    ],
+    "label_contraindications": [
+      {
+        "kind": "class",
+        "target": "Guanylate Cyclase Stimulators",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "4 CONTRAINDICATIONS Administration with nitrates and nitric oxide donors ( 2.4 , 4.1 ) Administration with guanylate cyclase (GC) stimulators, such as riociguat ( 2.4 , 4.2 ) 4.1 Nitrates Administration of vardenafil hydrochloride orally disintegrating tablets with nitrates (either regularly and/or intermittently) and nitric oxide donors is contraindicated [see Clinical Pharmacology (12.2)] .",
+        "set_id": "0ce4eb7b-fa50-441d-ae71-eb33dca27926",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ce4eb7b-fa50-441d-ae71-eb33dca27926"
+      },
+      {
+        "kind": "class",
+        "target": "Nitrate Vasodilator",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "4 CONTRAINDICATIONS Administration with nitrates and nitric oxide donors ( 2.4 , 4.1 ) Administration with guanylate cyclase (GC) stimulators, such as riociguat ( 2.4 , 4.2 ) 4.1 Nitrates Administration of vardenafil hydrochloride orally disintegrating tablets with nitrates (either regularly and/or intermittently) and nitric oxide donors is contraindicated [see Clinical Pharmacology (12.2)] .",
+        "set_id": "0ce4eb7b-fa50-441d-ae71-eb33dca27926",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ce4eb7b-fa50-441d-ae71-eb33dca27926"
+      },
+      {
+        "kind": "class",
+        "target": "Nitric Oxide Donors",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "4 CONTRAINDICATIONS Administration with nitrates and nitric oxide donors ( 2.4 , 4.1 ) Administration with guanylate cyclase (GC) stimulators, such as riociguat ( 2.4 , 4.2 ) 4.1 Nitrates Administration of vardenafil hydrochloride orally disintegrating tablets with nitrates (either regularly and/or intermittently) and nitric oxide donors is contraindicated [see Clinical Pharmacology (12.2)] .",
+        "set_id": "0ce4eb7b-fa50-441d-ae71-eb33dca27926",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ce4eb7b-fa50-441d-ae71-eb33dca27926"
+      }
     ]
   },
   {
-    "drug_name": "avanafil",
-    "class": "PDE5 inhibitor",
+    "drug_name": "ziprasidone",
+    "display_name": "Ziprasidone",
+    "class": "Second generation antipsychotic",
+    "pharmacologic_action": "Acts as antagonist at dopamine-2 and serotonin type 1 and 2 (5HT1D, 5HT2A) receptors; acts as agonist at serotonin 5HT1A receptor; moderately inhibits reuptake of norepinephrine and serotonin; has alpha-blocking and antihistaminic activity",
     "common_uses": [
-      "Erectile dysfunction"
+      "For the management of agitated or violent patients suffering a behavioral emergency"
     ],
-    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates.",
-    "pediatric_dose": "N/A for field EMS use.",
-    "contraindicated_with": [],
-    "interaction_notes": {},
-    "notes": "SEED/DEMO dataset only. Deliberately carries NO hand-written `contraindicated_with` entry for nitrates: the nitrate interaction is caught by the class-level rule (PDE5 inhibitor MoA) instead. That is the point of the class rules -- adding a new PDE5 inhibitor is a seed-data change with no interaction list to maintain.",
+    "indications_text": "For the management of agitated or violent patients suffering a behavioral emergency",
+    "contraindications_text": "Documented hypersensitivity, any drugs or conditions that prolong QT interval, recent acute myocardial infarction, uncompensated heart failure",
+    "trade_names": [
+      "geodon"
+    ],
+    "source_document": "NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications",
+    "source_version": "3.0 (Rev. March 2022)",
+    "notes": "Formulary entry extracted verbatim from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications, version 3.0 (Rev. March 2022). The appendix states that contraindications 'which were not pertinent to EMS clinicians were not included' -- this is a field reference, not a complete drug monograph, and is not a substitute for your agency's own medical-direction-approved formulary.",
     "classes": [
       {
-        "class_id": "N0000020026",
-        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_id": "N0000000099",
+        "class_name": "Adrenergic alpha-Antagonists",
         "class_type": "MOA"
       },
       {
-        "class_id": "N0000175599",
-        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_id": "N0000000130",
+        "class_name": "Serotonin Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000190",
+        "class_name": "Histamine H1 Receptor Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000230",
+        "class_name": "Dopamine Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175430",
+        "class_name": "Atypical Antipsychotic",
         "class_type": "EPC"
       }
     ],
-    "contraindicated_classes": [
+    "contraindicated_classes": [],
+    "label_contraindications": [
       {
-        "class_id": "N0000190484",
-        "class_name": "Guanylate Cyclase Stimulators",
-        "class_type": "MOA"
+        "kind": "drug",
+        "target": "droperidol",
+        "severity": "CONTRAINDICATED",
+        "section": "contraindications",
+        "evidence": "Therefore, ziprasidone should not be given with: dofetilide, sotalol, quinidine, other Class Ia and III anti-arrhythmics, mesoridazine, thioridazine, chlorpromazine, droperidol, pimozide, sparfloxacin, gatifloxacin, moxifloxacin, halofantrine, mefloquine, pentamidine, arsenic trioxide, levomethadyl acetate, dolasetron mesylate, probucol or tacrolimus. other drugs that have demonstrated QT prolonga",
+        "set_id": "77a10f48-e300-465f-81b5-54be38daa4b3",
+        "source": "FDA drug label via openFDA",
+        "source_url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=77a10f48-e300-465f-81b5-54be38daa4b3"
       }
     ]
   },
   {
-    "drug_name": "epi",
-    "alias_of": "epinephrine",
-    "notes": "Alias row: 'epi' resolves to 'epinephrine'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "adrenaline",
-    "alias_of": "epinephrine",
-    "notes": "Alias row: 'adrenaline' resolves to 'epinephrine'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "epipen",
-    "alias_of": "epinephrine",
-    "notes": "Alias row: 'epipen' resolves to 'epinephrine'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "narcan",
-    "alias_of": "naloxone",
-    "notes": "Alias row: 'narcan' resolves to 'naloxone'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "nitro",
-    "alias_of": "nitroglycerin",
-    "notes": "Alias row: 'nitro' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "ntg",
-    "alias_of": "nitroglycerin",
-    "notes": "Alias row: 'ntg' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "nitrostat",
-    "alias_of": "nitroglycerin",
-    "notes": "Alias row: 'nitrostat' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "asa",
-    "alias_of": "aspirin",
-    "notes": "Alias row: 'asa' resolves to 'aspirin'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "baby aspirin",
-    "alias_of": "aspirin",
-    "notes": "Alias row: 'baby aspirin' resolves to 'aspirin'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "ventolin",
+    "drug_name": "accuneb",
     "alias_of": "albuterol",
-    "notes": "Alias row: 'ventolin' resolves to 'albuterol'. SEED/DEMO dataset only."
+    "notes": "Alias row: 'accuneb' resolves to 'albuterol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
-    "drug_name": "salbutamol",
-    "alias_of": "albuterol",
-    "notes": "Alias row: 'salbutamol' resolves to 'albuterol'. SEED/DEMO dataset only."
+    "drug_name": "acetadote",
+    "alias_of": "acetylcysteine",
+    "notes": "Alias row: 'acetadote' resolves to 'acetylcysteine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
-    "drug_name": "proventil",
-    "alias_of": "albuterol",
-    "notes": "Alias row: 'proventil' resolves to 'albuterol'. SEED/DEMO dataset only."
+    "drug_name": "actidose-aqua",
+    "alias_of": "activated charcoal",
+    "notes": "Alias row: 'actidose-aqua' resolves to 'activated charcoal'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
-    "drug_name": "inderal",
-    "alias_of": "propranolol",
-    "notes": "Alias row: 'inderal' resolves to 'propranolol'. SEED/DEMO dataset only."
+    "drug_name": "acudial",
+    "alias_of": "diazepam",
+    "notes": "Alias row: 'acudial' resolves to 'diazepam'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
-    "drug_name": "viagra",
-    "alias_of": "sildenafil",
-    "notes": "Alias row: 'viagra' resolves to 'sildenafil'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "revatio",
-    "alias_of": "sildenafil",
-    "notes": "Alias row: 'revatio' resolves to 'sildenafil'. SEED/DEMO dataset only."
-  },
-  {
-    "drug_name": "cialis",
-    "alias_of": "tadalafil",
-    "notes": "Alias row: 'cialis' resolves to 'tadalafil'. SEED/DEMO dataset only."
+    "drug_name": "adalat cc",
+    "alias_of": "nifedipine",
+    "notes": "Alias row: 'adalat cc' resolves to 'nifedipine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
     "drug_name": "adcirca",
@@ -434,9 +2699,539 @@
     "notes": "Alias row: 'adcirca' resolves to 'tadalafil'. SEED/DEMO dataset only."
   },
   {
+    "drug_name": "adenocard",
+    "alias_of": "adenosine",
+    "notes": "Alias row: 'adenocard' resolves to 'adenosine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "adrenaclick",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'adrenaclick' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "adrenalin",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'adrenalin' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "adrenaline",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'adrenaline' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "afrin",
+    "alias_of": "oxymetazoline",
+    "notes": "Alias row: 'afrin' resolves to 'oxymetazoline'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "alka-seltzer with aspirin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'alka-seltzer with aspirin' resolves to 'aspirin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "asa",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'asa' resolves to 'aspirin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "ascriptin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'ascriptin' resolves to 'aspirin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "asthmanefrin",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'asthmanefrin' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "astramorph",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'astramorph' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "ativan",
+    "alias_of": "lorazepam",
+    "notes": "Alias row: 'ativan' resolves to 'lorazepam'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "atropen",
+    "alias_of": "atropine",
+    "notes": "Alias row: 'atropen' resolves to 'atropine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "atrovent",
+    "alias_of": "ipratropium",
+    "notes": "Alias row: 'atrovent' resolves to 'ipratropium'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "auvi-q",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'auvi-q' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "avinza",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'avinza' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "baby aspirin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'baby aspirin' resolves to 'aspirin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "bayer buffered aspirin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'bayer buffered aspirin' resolves to 'aspirin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "benadryl",
+    "alias_of": "diphenhydramine",
+    "notes": "Alias row: 'benadryl' resolves to 'diphenhydramine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "bicarb",
+    "alias_of": "sodium bicarbonate",
+    "notes": "Alias row: 'bicarb' resolves to 'sodium bicarbonate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "cialis",
+    "alias_of": "tadalafil",
+    "notes": "Alias row: 'cialis' resolves to 'tadalafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "compazine",
+    "alias_of": "prochlorperazine",
+    "notes": "Alias row: 'compazine' resolves to 'prochlorperazine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "cordarone",
+    "alias_of": "amiodarone",
+    "notes": "Alias row: 'cordarone' resolves to 'amiodarone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "cortef",
+    "alias_of": "hydrocortisone succinate",
+    "notes": "Alias row: 'cortef' resolves to 'hydrocortisone succinate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "cyanokit",
+    "alias_of": "hydroxocobalamin",
+    "notes": "Alias row: 'cyanokit' resolves to 'hydroxocobalamin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "d50w",
+    "alias_of": "dextrose",
+    "notes": "Alias row: 'd50w' resolves to 'dextrose'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "decadron",
+    "alias_of": "dexamethasone",
+    "notes": "Alias row: 'decadron' resolves to 'dexamethasone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "deltasone",
+    "alias_of": "prednisone",
+    "notes": "Alias row: 'deltasone' resolves to 'prednisone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "depodur",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'depodur' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "depomedrol",
+    "alias_of": "methylprednisolone",
+    "notes": "Alias row: 'depomedrol' resolves to 'methylprednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "dexasone",
+    "alias_of": "dexamethasone",
+    "notes": "Alias row: 'dexasone' resolves to 'dexamethasone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "dglucose",
+    "alias_of": "dextrose",
+    "notes": "Alias row: 'dglucose' resolves to 'dextrose'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "diamox sequels",
+    "alias_of": "acetazolamide",
+    "notes": "Alias row: 'diamox sequels' resolves to 'acetazolamide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "diastat",
+    "alias_of": "diazepam",
+    "notes": "Alias row: 'diastat' resolves to 'diazepam'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "dilacor",
+    "alias_of": "diltiazem",
+    "notes": "Alias row: 'dilacor' resolves to 'diltiazem'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "dilaudid",
+    "alias_of": "hydromorphone",
+    "notes": "Alias row: 'dilaudid' resolves to 'hydromorphone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "diltiaz",
+    "alias_of": "diltiazem",
+    "notes": "Alias row: 'diltiaz' resolves to 'diltiazem'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "dristan 12 hr",
+    "alias_of": "oxymetazoline",
+    "notes": "Alias row: 'dristan 12 hr' resolves to 'oxymetazoline'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "duodote",
+    "alias_of": "atropine",
+    "notes": "Alias row: 'duodote' resolves to 'atropine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "duramist plus",
+    "alias_of": "oxymetazoline",
+    "notes": "Alias row: 'duramist plus' resolves to 'oxymetazoline'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "duramorph",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'duramorph' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "ecotrin",
+    "alias_of": "aspirin",
+    "notes": "Alias row: 'ecotrin' resolves to 'aspirin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "epi",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'epi' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "epipen",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'epipen' resolves to 'epinephrine'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "flopred",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'flopred' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "geodon",
+    "alias_of": "ziprasidone",
+    "notes": "Alias row: 'geodon' resolves to 'ziprasidone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "glucagen",
+    "alias_of": "glucagon",
+    "notes": "Alias row: 'glucagen' resolves to 'glucagon'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "glucagen hypokit",
+    "alias_of": "glucagon",
+    "notes": "Alias row: 'glucagen hypokit' resolves to 'glucagon'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "glucagon emergency kit",
+    "alias_of": "glucagon",
+    "notes": "Alias row: 'glucagon emergency kit' resolves to 'glucagon'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "gluconate",
+    "alias_of": "calcium gluconate",
+    "notes": "Alias row: 'gluconate' resolves to 'calcium gluconate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "glucose",
+    "alias_of": "dextrose",
+    "notes": "Alias row: 'glucose' resolves to 'dextrose'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "haldol",
+    "alias_of": "haloperidol",
+    "notes": "Alias row: 'haldol' resolves to 'haloperidol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "haldol decanoate",
+    "alias_of": "haloperidol",
+    "notes": "Alias row: 'haldol decanoate' resolves to 'haloperidol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "haloperidol la",
+    "alias_of": "haloperidol",
+    "notes": "Alias row: 'haloperidol la' resolves to 'haloperidol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "heliox",
+    "alias_of": "helium gas mixture",
+    "notes": "Alias row: 'heliox' resolves to 'helium gas mixture'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "inapsine",
+    "alias_of": "droperidol",
+    "notes": "Alias row: 'inapsine' resolves to 'droperidol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "inderal",
+    "alias_of": "propranolol",
+    "notes": "Alias row: 'inderal' resolves to 'propranolol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "infumorph",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'infumorph' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "intropin",
+    "alias_of": "dopamine",
+    "notes": "Alias row: 'intropin' resolves to 'dopamine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "kadian",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'kadian' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "ketalar",
+    "alias_of": "ketamine",
+    "notes": "Alias row: 'ketalar' resolves to 'ketamine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "levarterenol",
+    "alias_of": "norepinephrine",
+    "notes": "Alias row: 'levarterenol' resolves to 'norepinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
     "drug_name": "levitra",
     "alias_of": "vardenafil",
     "notes": "Alias row: 'levitra' resolves to 'vardenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "levophed",
+    "alias_of": "norepinephrine",
+    "notes": "Alias row: 'levophed' resolves to 'norepinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "lidocaine cv",
+    "alias_of": "lidocaine",
+    "notes": "Alias row: 'lidocaine cv' resolves to 'lidocaine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "lidopen",
+    "alias_of": "lidocaine",
+    "notes": "Alias row: 'lidopen' resolves to 'lidocaine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "lopressor",
+    "alias_of": "metoprolol",
+    "notes": "Alias row: 'lopressor' resolves to 'metoprolol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "medrol",
+    "alias_of": "methylprednisolone",
+    "notes": "Alias row: 'medrol' resolves to 'methylprednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "medrol dosepak",
+    "alias_of": "methylprednisolone",
+    "notes": "Alias row: 'medrol dosepak' resolves to 'methylprednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "metozolv odt",
+    "alias_of": "metoclopramide",
+    "notes": "Alias row: 'metozolv odt' resolves to 'metoclopramide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "mgso4",
+    "alias_of": "magnesium sulfate",
+    "notes": "Alias row: 'mgso4' resolves to 'magnesium sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "millipred",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'millipred' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "motrin",
+    "alias_of": "ibuprofen",
+    "notes": "Alias row: 'motrin' resolves to 'ibuprofen'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "ms contin",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'ms contin' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "mso4",
+    "alias_of": "morphine sulfate",
+    "notes": "Alias row: 'mso4' resolves to 'morphine sulfate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "mucomyst",
+    "alias_of": "acetylcysteine",
+    "notes": "Alias row: 'mucomyst' resolves to 'acetylcysteine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "n2o",
+    "alias_of": "nitrous oxide",
+    "notes": "Alias row: 'n2o' resolves to 'nitrous oxide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "narcan",
+    "alias_of": "naloxone",
+    "notes": "Alias row: 'narcan' resolves to 'naloxone'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "nexterone",
+    "alias_of": "amiodarone",
+    "notes": "Alias row: 'nexterone' resolves to 'amiodarone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "nifedical",
+    "alias_of": "nifedipine",
+    "notes": "Alias row: 'nifedical' resolves to 'nifedipine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "nithiodote",
+    "alias_of": "sodium nitrite",
+    "notes": "Alias row: 'nithiodote' resolves to 'sodium nitrite'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "nitro",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitro' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "nitrolingual pumpspray",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitrolingual pumpspray' resolves to 'nitroglycerin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "nitroquick",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitroquick' resolves to 'nitroglycerin'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "nitrostat",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'nitrostat' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "ntg",
+    "alias_of": "nitroglycerin",
+    "notes": "Alias row: 'ntg' resolves to 'nitroglycerin'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "orapred",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'orapred' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pacerone",
+    "alias_of": "amiodarone",
+    "notes": "Alias row: 'pacerone' resolves to 'amiodarone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pediapred",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'pediapred' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pepcid",
+    "alias_of": "famotidine",
+    "notes": "Alias row: 'pepcid' resolves to 'famotidine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "peridol",
+    "alias_of": "haloperidol",
+    "notes": "Alias row: 'peridol' resolves to 'haloperidol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pima syrup",
+    "alias_of": "potassium iodide",
+    "notes": "Alias row: 'pima syrup' resolves to 'potassium iodide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pralidoxime auto injector",
+    "alias_of": "pralidoxime chloride",
+    "notes": "Alias row: 'pralidoxime auto injector' resolves to 'pralidoxime chloride'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "prelone syrup",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'prelone syrup' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "proair",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'proair' resolves to 'albuterol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "procanbid",
+    "alias_of": "procainamide",
+    "notes": "Alias row: 'procanbid' resolves to 'procainamide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "procardia",
+    "alias_of": "nifedipine",
+    "notes": "Alias row: 'procardia' resolves to 'nifedipine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "pronestyl",
+    "alias_of": "procainamide",
+    "notes": "Alias row: 'pronestyl' resolves to 'procainamide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "protopam",
+    "alias_of": "pralidoxime chloride",
+    "notes": "Alias row: 'protopam' resolves to 'pralidoxime chloride'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "proventil",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'proventil' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "rayos",
+    "alias_of": "prednisone",
+    "notes": "Alias row: 'rayos' resolves to 'prednisone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "reglan",
+    "alias_of": "metoclopramide",
+    "notes": "Alias row: 'reglan' resolves to 'metoclopramide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "revatio",
+    "alias_of": "sildenafil",
+    "notes": "Alias row: 'revatio' resolves to 'sildenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "salbutamol",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'salbutamol' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "sinarest 12 hour",
+    "alias_of": "oxymetazoline",
+    "notes": "Alias row: 'sinarest 12 hour' resolves to 'oxymetazoline'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "solucortef",
+    "alias_of": "hydrocortisone succinate",
+    "notes": "Alias row: 'solucortef' resolves to 'hydrocortisone succinate'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "solumedrol",
+    "alias_of": "methylprednisolone",
+    "notes": "Alias row: 'solumedrol' resolves to 'methylprednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "sski",
+    "alias_of": "potassium iodide",
+    "notes": "Alias row: 'sski' resolves to 'potassium iodide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   },
   {
     "drug_name": "staxyn",
@@ -447,5 +3242,105 @@
     "drug_name": "stendra",
     "alias_of": "avanafil",
     "notes": "Alias row: 'stendra' resolves to 'avanafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "sterapred",
+    "alias_of": "prednisone",
+    "notes": "Alias row: 'sterapred' resolves to 'prednisone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "tagamet",
+    "alias_of": "cimetidine",
+    "notes": "Alias row: 'tagamet' resolves to 'cimetidine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "thyrosafe",
+    "alias_of": "potassium iodide",
+    "notes": "Alias row: 'thyrosafe' resolves to 'potassium iodide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "thyroshield",
+    "alias_of": "potassium iodide",
+    "notes": "Alias row: 'thyroshield' resolves to 'potassium iodide'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "toprol xl",
+    "alias_of": "metoprolol",
+    "notes": "Alias row: 'toprol xl' resolves to 'metoprolol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "toradol",
+    "alias_of": "ketoralac",
+    "notes": "Alias row: 'toradol' resolves to 'ketoralac'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "trandate",
+    "alias_of": "labetalol",
+    "notes": "Alias row: 'trandate' resolves to 'labetalol'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "twinject",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'twinject' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "valium",
+    "alias_of": "diazepam",
+    "notes": "Alias row: 'valium' resolves to 'diazepam'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "vaponefrin",
+    "alias_of": "epinephrine",
+    "notes": "Alias row: 'vaponefrin' resolves to 'epinephrine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "ventolin",
+    "alias_of": "albuterol",
+    "notes": "Alias row: 'ventolin' resolves to 'albuterol'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "veripred",
+    "alias_of": "prednisolone",
+    "notes": "Alias row: 'veripred' resolves to 'prednisolone'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "versed",
+    "alias_of": "midazolam",
+    "notes": "Alias row: 'versed' resolves to 'midazolam'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "viagra",
+    "alias_of": "sildenafil",
+    "notes": "Alias row: 'viagra' resolves to 'sildenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "vinegar",
+    "alias_of": "acetic acid",
+    "notes": "Alias row: 'vinegar' resolves to 'acetic acid'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "xylocaine",
+    "alias_of": "lidocaine",
+    "notes": "Alias row: 'xylocaine' resolves to 'lidocaine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "zofran",
+    "alias_of": "ondansetron",
+    "notes": "Alias row: 'zofran' resolves to 'ondansetron'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "zofran odt",
+    "alias_of": "ondansetron",
+    "notes": "Alias row: 'zofran odt' resolves to 'ondansetron'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "zuplenz",
+    "alias_of": "ondansetron",
+    "notes": "Alias row: 'zuplenz' resolves to 'ondansetron'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
+  },
+  {
+    "drug_name": "zyprexa",
+    "alias_of": "olanzapine",
+    "notes": "Alias row: 'zyprexa' resolves to 'olanzapine'. Trade name from NASEMSO National Model EMS Clinical Guidelines, Appendix III. Medications."
   }
 ]

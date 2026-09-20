@@ -94,6 +94,7 @@ python3 infra/tests/test_pcr_logic.py       # unit-ish, no AWS creds needed
 python3 infra/tests/test_protocol_search.py # protocol ranking + seed data
 python3 infra/tests/test_drug_classes.py    # class-level interactions + RxClass parsing
 python3 infra/tests/test_nasemso_ingest.py  # PDF parsing + extracted seed + retrieval floor
+python3 infra/tests/test_drug_sources.py    # FDA label mining + formulary parsing + layer merge
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
@@ -128,6 +129,13 @@ python3 infra/seed/seed_tables.py --refresh-classes
 # 403s automation, so pull it from a state EMS mirror, e.g.
 # https://ems.utah.gov/wp-content/uploads/sites/34/2024/05/National-Model-EMS-Clinical-Guidelines_2022.pdf
 python3 infra/seed/ingest_nasemso.py --pdf National-Model-EMS-Clinical-Guidelines_2022.pdf
+
+# Same PDF, Appendix III: the 65-drug EMS formulary -> drug_reference_seed.json
+python3 infra/seed/ingest_nasemso_meds.py --pdf National-Model-EMS-Clinical-Guidelines_2022.pdf
+
+# Mine FDA labelling (openFDA) for contraindications, with citations. No AWS
+# calls, no model; writes only `label_contraindications`. Review the diff.
+python3 infra/seed/seed_tables.py --refresh-labels
 
 # Adds lay-phrasing `symptoms` via Bedrock. Tried, measured, NOT shipped --
 # it did not improve retrieval (13/18 -> 11/18 at weight 3.0, 13/18 with
@@ -210,6 +218,8 @@ Expo app (Cognito-authenticated)
 | `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
 | `infra/seed/rxclass.py` | NLM RxClass client — seed-time only, never called from a Lambda |
+| `infra/seed/openfda.py` | FDA label mining — seed-time only, extractive, never a model |
+| `infra/seed/ingest_nasemso_meds.py` | NASEMSO Appendix III → the 65-drug EMS formulary |
 | `infra/seed/ingest_nasemso.py` | NASEMSO PDF → protocol records; deterministic, verbatim, no model |
 | `infra/seed/generate_symptoms.py` | Optional Bedrock pass adding lay-phrasing `symptoms` |
 | `infra/seed/nasemso_protocol_seed.json` | The 71 extracted guidelines — what gets seeded by default |
@@ -372,21 +382,47 @@ endpoint is a four-file change:
   the list. The GSI projects the flat `summary_*` / `search_text` /
   `flag_count` attributes from `build_summary_attrs`; a new list-card
   field has to be added there *and* to `NonKeyAttributes`.
-- **Interaction checks run two rule layers, and the merge direction is a
-  safety property.** Layer 1 is curated pairs (`contraindicated_with` +
-  `interaction_notes`) — hand-written and clinically phrased. Layer 2 is
-  drug classes (`classes` + `contraindicated_classes`, MoA/EPC ids from
-  RxClass), so one rule covers a whole class: vardenafil and avanafil flag
-  against nitrates with nobody adding them to a list. **Layer 2 only ever
-  adds flags.** RxClass has no contraindication relation between
-  epinephrine and propranolol, so the unopposed-alpha cross-check — the
-  demo moment — lives only in layer 1; letting classes replace curated
-  rules would delete it silently. A curated rule wins the flag when both
-  match, and flags carry `basis` (`curated_pair` / `drug_class`) plus the
-  source in the note, because the two are different levels of authority.
-  Both layers read **both** drugs in a pair and emit at most one flag per
-  pair, so data recording the contraindication on only one side still
-  fires — RxClass records nitrate/PDE5 on nitroglycerin's side only.
+- **Interaction checks run four rule layers, and the merge direction is a
+  safety property.** Highest authority first: curated pairs
+  (`contraindicated_with`), curated class rules
+  (`curated_contraindicated_classes`), FDA labelling
+  (`label_contraindications`), then RxClass classes
+  (`contraindicated_classes`). Every layer only **adds** flags; none may
+  remove another's, because each is blind where the others see. RxClass has
+  no epinephrine/propranolol relation at all. RxClass records nitrate/PDE5
+  on nitroglycerin's side only, leaving sildenafil's record empty — so amyl
+  nitrite, which the formulary carries, flagged against nothing until FDA
+  labelling supplied the reciprocal direction. And labelling in turn says
+  nothing about epinephrine and beta blockers in its contraindications
+  section. A pair matched by several layers is reported once, by the
+  highest, and every flag carries `basis` plus (for label rows) the
+  verbatim sentence and a DailyMed link. 69 drugs, 2346 pairs, 12 flags.
+- **`curated_contraindicated_classes` is how a mechanism gets written once.**
+  "Epinephrine must not meet a non-selective beta blocker" covers
+  propranolol, labetalol, nadolol and sotalol — and is keyed on the
+  **beta-2 antagonist** class deliberately, so beta-1 selective agents like
+  metoprolol correctly do *not* fire. Over-warning costs a real drug.
+  `--refresh-classes` never touches this field; it owns `classes` and
+  `contraindicated_classes` only.
+- **`class_exclusions` overrides a derived classification, with a reason.**
+  RxClass files nitrous oxide under the MoA "Nitric Oxide Donors" — true of
+  the chemistry, false of the clinical rule. Without the exclusion every
+  PDE5 inhibitor's labelling told a medic to withhold Entonox from a
+  patient who took Viagra. Dropping the class outright is *not* the fix:
+  amyl nitrite is an organic nitrite, genuinely carries the interaction,
+  and that class is the only one RxClass gives it.
+- **`--refresh-labels` mines FDA labelling extractively, never with a model.**
+  Each row keeps the label's own sentence and its DailyMed set id, so every
+  flag traces to a line a human can read. Three guards, each of which was
+  added after it produced a wrong flag against the real API: only
+  single-ingredient labels whose generic name matches (searching "naloxone"
+  returns pentazocine/naloxone first, "nitroglycerin" returns a homeopathic
+  remedy); only the `contraindications` and `boxed_warning` sections
+  (`drug_interactions` is pharmacokinetics and *negative* findings — it
+  yielded a flag from vardenafil's "did not potentiate"); and a
+  co-administration cue **judged near the drug mention**, which is what
+  separates "do not give with X" from patient history ("reactions after
+  taking aspirin") and from diluent notes ("dextrose ... allergy to corn").
 - **`--refresh-classes` writes the seed file, not DynamoDB, and never
   touches `contraindicated_with`.** Class data is reviewed in a diff before
   it reaches a medic, and no Lambda makes an outbound call — RxClass is a

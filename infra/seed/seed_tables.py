@@ -75,6 +75,50 @@ def refresh_classes() -> int:
     return changed
 
 
+def refresh_labels() -> int:
+    """Mine openFDA labelling into `label_contraindications` on each record.
+
+    Writes only that field. Curated pairs, doses and RxClass data are
+    untouched -- three independent sources that the interaction checker
+    merges at read time, rather than one that overwrites the others.
+    """
+    sys.path.insert(0, str(HERE))
+    import openfda
+
+    drugs = json.loads(DRUG_SEED.read_text())
+    known = openfda.known_drug_spellings(drugs)
+    total = 0
+
+    for item in drugs:
+        if item.get("alias_of"):
+            continue
+        name = item["drug_name"]
+        try:
+            picked = openfda.select_label(name, openfda.fetch_labels(name))
+        except Exception as e:  # noqa: BLE001 -- one bad lookup must not
+            print(f"  {name:22} LOOKUP FAILED ({e})")
+            continue           # discard rows already reviewed and committed
+        if not picked:
+            print(f"  {name:22} no single-ingredient label with a "
+                  f"contraindications section")
+            continue
+        _, label, sections = picked
+        rows = openfda.extract(item, sections, label.get("set_id", ""), known)
+        if rows:
+            item["label_contraindications"] = rows
+            total += len(rows)
+            targets = ", ".join(f"{r['kind']}:{r['target']}" for r in rows)
+            print(f"  {name:22} {len(rows):2} -> {targets[:88]}")
+        else:
+            item.pop("label_contraindications", None)
+
+    DRUG_SEED.write_text(json.dumps(drugs, indent=2, ensure_ascii=False) + "\n")
+    print(f"\n{total} label-derived contraindication row(s) in {DRUG_SEED.name}.")
+    print("Every row carries the verbatim sentence and its DailyMed set id.")
+    print("Review the diff, then run without --refresh-labels to seed DynamoDB.")
+    return total
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", default="dev")
@@ -85,6 +129,10 @@ def main():
         help="Refresh drug classes from NLM RxClass into the seed file, then exit. "
              "Makes no AWS calls.")
     parser.add_argument(
+        "--refresh-labels", action="store_true",
+        help="Mine FDA labelling (openFDA) for contraindications into the seed "
+             "file, then exit. Makes no AWS calls.")
+    parser.add_argument(
         "--demo-protocols", action="store_true",
         help="Seed the three hand-written demo protocols instead of the 71 "
              "extracted NASEMSO guidelines.")
@@ -92,6 +140,10 @@ def main():
 
     if args.refresh_classes:
         refresh_classes()
+        return
+
+    if args.refresh_labels:
+        refresh_labels()
         return
 
     stack_name = args.stack_name or f"ems-copilot-{args.stage}"

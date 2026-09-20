@@ -11,7 +11,7 @@
 // assistant's job, behind medical direction, and this screen is a
 // reference page.
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Linking } from "react-native";
 import { api } from "../api/client";
 import { colors, radius, space } from "../theme";
 import { Section, Chips, BulletList, ErrorText } from "../components/ui";
@@ -47,6 +47,7 @@ export default function DrugDetailScreen({ route }) {
   const notes = drug.interaction_notes || {};
   const classes = (drug.classes || []).map((c) => c.class_name).filter(Boolean);
   const ciClasses = (drug.contraindicated_classes || []).map((c) => c.class_name).filter(Boolean);
+  const labelRows = drug.label_contraindications || [];
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
@@ -87,8 +88,43 @@ export default function DrugDetailScreen({ route }) {
         ))}
       </Section>
 
+      <Section title="Contraindications (EMS formulary)"
+               hidden={!drug.contraindications_text}>
+        <View style={styles.formularyBox}>
+          <Text style={styles.noteText}>{drug.contraindications_text}</Text>
+        </View>
+      </Section>
+
+      {/* Verbatim label text with its DailyMed link, so a medic can read
+          the source rather than trust this pipeline's reading of it. */}
+      <Section title="FDA labelling" hidden={!labelRows.length}>
+        {labelRows.map((row, i) => (
+          <View key={i} style={styles.labelBox}>
+            <Text style={styles.labelTarget}>
+              {row.kind === "class" ? row.target : `with ${row.target}`}
+            </Text>
+            <Text style={styles.labelQuote}>“{row.evidence}”</Text>
+            <Text style={styles.labelMeta}>
+              {row.section === "boxed_warning" ? "Boxed warning" : "Contraindications"} section
+            </Text>
+            {!!row.source_url && (
+              <Text style={styles.labelLink} onPress={() => Linking.openURL(row.source_url)}>
+                Read on DailyMed →
+              </Text>
+            )}
+          </View>
+        ))}
+      </Section>
+
+      <Section title="Pharmacologic action" hidden={!drug.pharmacologic_action}>
+        <Text style={styles.prose}>{drug.pharmacologic_action}</Text>
+      </Section>
+
       <Section title="Drug classes" hidden={!classes.length}>
         <Chips items={classes} />
+        {(drug.class_exclusions || []).length > 0 && (
+          <Text style={styles.prose}>{drug.class_exclusion_note}</Text>
+        )}
       </Section>
 
       <Section title="Notes" hidden={!drug.notes}>
@@ -126,6 +162,22 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   noteText: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  formularyBox: {
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, padding: space.lg,
+  },
+  labelBox: {
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, padding: space.lg,
+    gap: space.xs, marginBottom: space.sm,
+  },
+  labelTarget: {
+    color: colors.danger, fontWeight: "700", fontSize: 13,
+    textTransform: "capitalize",
+  },
+  labelQuote: { color: colors.text, fontSize: 13, lineHeight: 20, fontStyle: "italic" },
+  labelMeta: { color: colors.faint, fontSize: 11 },
+  labelLink: { color: colors.accent, fontSize: 12, fontWeight: "600" },
   prose: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   spinner: { marginTop: space.xl },
 });

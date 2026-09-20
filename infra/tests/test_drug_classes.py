@@ -108,6 +108,8 @@ class TestClassRulesAddCoverage(unittest.TestCase):
     def setUp(self):
         use_table(SEED)
 
+    DERIVED = {"fda_label", "drug_class"}
+
     def test_flags_pde5_inhibitors_absent_from_any_curated_list(self):
         for drug in ("vardenafil", "avanafil"):
             with self.subTest(drug):
@@ -116,18 +118,39 @@ class TestClassRulesAddCoverage(unittest.TestCase):
                     [c.lower() for c in SEED["nitroglycerin"]["contraindicated_with"]],
                     "test is meaningless if the curated list already has it")
                 flag = only_flag(["nitroglycerin", drug])
-                self.assertEqual(flag["basis"], "drug_class")
+                # Which derived layer catches it depends on what the FDA
+                # label happens to name; the point is that no hand-written
+                # pair exists and it flags anyway.
+                self.assertIn(flag["basis"], self.DERIVED)
 
-    def test_class_flag_names_the_class_and_its_source(self):
+    def test_derived_flag_names_its_source(self):
+        """Whichever derived layer fires, the note has to say where it came
+        from -- a generated warning and a curated one are different levels
+        of authority and must not read identically."""
         flag = only_flag(["nitroglycerin", "vardenafil"])
-        self.assertIn("Phosphodiesterase 5 Inhibitors", flag["note"])
+        self.assertIn(flag["basis"], self.DERIVED)
+        note = flag["note"]
+        self.assertTrue("RxClass" in note or "FDA labelling" in note, note)
+
+    def test_class_layer_in_isolation_still_names_rxclass(self):
+        # Exercised on a fixture so the assertion is about the class layer
+        # itself, not about which layer currently wins for a real pair.
+        fixture = {
+            "a": {"drug_name": "a", "contraindicated_with": [],
+                  "contraindicated_classes": [{"class_id": "C1", "class_name": "Widgets"}]},
+            "b": {"drug_name": "b", "contraindicated_with": [],
+                  "classes": [{"class_id": "C1", "class_name": "Widgets"}]},
+        }
+        use_table(fixture)
+        flag = only_flag(["a", "b"])
+        self.assertEqual(flag["basis"], "drug_class")
+        self.assertIn("Widgets", flag["note"])
         self.assertIn("RxClass", flag["note"])
-        self.assertEqual([c["class_id"] for c in flag["matched_classes"]],
-                         ["N0000020026"])
+        self.assertEqual([c["class_id"] for c in flag["matched_classes"]], ["C1"])
 
     def test_works_through_brand_name_aliases(self):
-        self.assertEqual(only_flag(["nitro", "levitra"])["basis"], "drug_class")
-        self.assertEqual(only_flag(["ntg", "stendra"])["basis"], "drug_class")
+        self.assertIn(only_flag(["nitro", "levitra"])["basis"], self.DERIVED)
+        self.assertIn(only_flag(["ntg", "stendra"])["basis"], self.DERIVED)
 
     def test_fires_although_only_one_side_records_the_class(self):
         """RxClass records this pair on nitroglycerin's side only, so the
@@ -301,10 +324,16 @@ class TestSeedClassData(unittest.TestCase):
                 with self.subTest(row["drug_name"]):
                     self.assertNotIn("classes", row)
 
-    def test_every_non_alias_record_is_labelled_demo_data(self):
+    def test_every_record_states_its_provenance(self):
+        """Either the original demo labelling or the NASEMSO formulary
+        citation -- what must never happen is a record that reads as
+        clinically authoritative with no source attached."""
         for row in SEED.values():
             with self.subTest(row["drug_name"]):
-                self.assertIn("SEED/DEMO", row.get("notes", ""))
+                notes = row.get("notes", "")
+                self.assertTrue(
+                    "SEED/DEMO" in notes or "NASEMSO" in notes,
+                    f"{row['drug_name']} has unattributed notes: {notes[:60]!r}")
 
 
 if __name__ == "__main__":
