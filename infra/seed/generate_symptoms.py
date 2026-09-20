@@ -2,6 +2,34 @@
 """
 Add `symptoms` (lay/field phrasings) to extracted protocol records.
 
+**This was run against all 71 NASEMSO guidelines and it did not work. Do
+not re-run it expecting retrieval to improve.** Measured on the 18-query
+benchmark in `infra/tests/test_nasemso_ingest.py`:
+
+    no generated symptoms                        13/18   <- shipped
+    +1267 generated terms, weight 3.0            11/18
+    +terms pruned to df<=3, weight 2.0           13/18   (zero queries changed)
+
+The failure is structural, not a prompt problem. The model is shown the
+guideline's own text and asked for the words an EMT would use instead --
+but if that text contained those words, retrieval would already have found
+them. What comes back is therefore either vocabulary already indexed via
+`indications`/`assessment`, or generic symptoms that many guidelines share:
+"altered mental status" was claimed by 12 of 71 protocols, "nausea" and
+"trouble breathing" by 10 each. At weight 3.0 those tie with a title match,
+which is how "unresponsive pinpoint pupils not breathing" started returning
+the organophosphate guideline instead of opioid overdose.
+
+You cannot generate a vocabulary bridge out of the text that is missing the
+vocabulary. Closing that gap needs an outside source of field language
+(EMT-written queries, dispatch complaint text, real search logs) or a
+semantic index -- Bedrock Knowledge Base / OpenSearch -- which is the
+documented replacement for this scorer anyway.
+
+The script is kept because the machinery around it is sound and reusable:
+the dose/route/imperative filters and the `--check` self-retrieval gate
+are what a future vocabulary source should be run through.
+
     python3 infra/seed/generate_symptoms.py --in nasemso_protocol_seed.json
 
 Separate from `ingest_nasemso.py` on purpose. That script is purely
@@ -27,6 +55,7 @@ import json
 import pathlib
 import re
 import sys
+import time
 import boto3
 
 HERE = pathlib.Path(__file__).parent
@@ -63,7 +92,15 @@ Assessment findings: {assessment}
 
 # A "symptom" carrying any of these is a treatment instruction wearing the
 # wrong hat, and must not enter the index.
-_DOSE = re.compile(r"\d|\b(mg|mcg|ml|kg|g|iu|units?|cc|joules?|j)\b", re.I)
+# A *dose*, not merely a digit. Rejecting every digit also threw away "k2"
+# (a street name for synthetic cannabinoids), "adalat cc", "etco2" and
+# "12-lead ekg" -- all legitimate things to search for. What must never get
+# through is a quantity attached to a unit.
+_DOSE = re.compile(
+    r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|ug|ml|l|kg|lbs?|g|iu|units?|cc|joules?|"
+    r"mmhg|%|feet|foot|ft|meters?|minutes?|hours?|inches)\b"
+    r"|\b\d+\s*(?:/|per)\s*\d+\b"          # 1:1000, 20/kg style ratios
+    r"|\b\d+\s*:\s*\d+\b", re.I)
 _ROUTE = re.compile(r"\b(iv|io|im|in|po|sl|et|ett|neb|nebulized|intranasal|"
                     r"subcutaneous|infusion|drip|bolus)\b", re.I)
 # Anchored to the first word: an imperative is a phrase that *starts* with
@@ -109,7 +146,7 @@ def clean(terms, title: str) -> tuple:
     return accepted[:MAX_TERMS], rejected
 
 
-def generate(record: dict, client) -> list:
+def generate(record: dict, client, attempts: int = 5) -> list:
     prompt = PROMPT.format(
         max_terms=MAX_TERMS,
         title=record["title"],
@@ -117,11 +154,20 @@ def generate(record: dict, client) -> list:
         indications=(record.get("indications") or "none")[:1200],
         assessment=" ".join(record.get("assessment", []))[:2500] or "none",
     )
-    resp = client.converse(
-        modelId=MODEL,
-        messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": 500, "temperature": 0},
-    )
+    # Bedrock throttles a tight loop of 71 calls; boto3's own retries are not
+    # enough, and a throttled record silently keeps whatever symptoms it had.
+    for attempt in range(attempts):
+        try:
+            resp = client.converse(
+                modelId=MODEL,
+                messages=[{"role": "user", "content": [{"text": prompt}]}],
+                inferenceConfig={"maxTokens": 500, "temperature": 0},
+            )
+            break
+        except Exception as e:  # noqa: BLE001
+            if "Throttl" not in str(e) or attempt == attempts - 1:
+                raise
+            time.sleep(2 ** attempt)
     text = "".join(b.get("text", "") for b in resp["output"]["message"]["content"])
     start, end = text.find("["), text.rfind("]")
     if start < 0 or end < 0:
@@ -183,6 +229,7 @@ def main():
         terms, rejected = clean(raw, rec["title"])
         rec["symptoms"] = terms
         total_rejected += len(rejected)
+        time.sleep(0.2)   # be a good citizen across 71 sequential calls
         print(f"[{i}/{len(todo)}] {rec['protocol_id'][:48]:48} {len(terms):2} kept"
               f"{'  ' + str(len(rejected)) + ' rejected' if rejected else ''}")
         for term, reason in rejected[:3]:

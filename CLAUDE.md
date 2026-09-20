@@ -129,8 +129,9 @@ python3 infra/seed/seed_tables.py --refresh-classes
 # https://ems.utah.gov/wp-content/uploads/sites/34/2024/05/National-Model-EMS-Clinical-Guidelines_2022.pdf
 python3 infra/seed/ingest_nasemso.py --pdf National-Model-EMS-Clinical-Guidelines_2022.pdf
 
-# Optional, NOT run by default: add lay-phrasing `symptoms` via Bedrock.
-# See the retrieval note below before deciding to run it.
+# Adds lay-phrasing `symptoms` via Bedrock. Tried, measured, NOT shipped --
+# it did not improve retrieval (13/18 -> 11/18 at weight 3.0, 13/18 with
+# pruning and zero queries changed). Read its docstring before re-running.
 python3 infra/seed/generate_symptoms.py
 python3 infra/seed/generate_symptoms.py --check   # self-retrieval gate
 
@@ -269,7 +270,12 @@ endpoint is a four-file change:
   prose doesn't use them. Scoring cannot bridge that — only a vocabulary
   layer (`generate_symptoms.py`) or a real semantic index (Bedrock
   Knowledge Base / OpenSearch) can, and the latter remains the documented
-  right answer.
+  right answer. **The generated-symptom route was tried and measured, and
+  it does not work** — see `generate_symptoms.py`'s docstring. A model shown
+  the guideline's own text can only return vocabulary that text already
+  has, plus generic symptoms 10+ guidelines share; it cannot invent the
+  bridge. Closing this needs field language from outside the document
+  (EMT-written queries, dispatch complaint text) or a semantic index.
 - **Protocols** — PK `protocol_id`. Retrieval is `scan(Limit=200)` in
   `protocol/app.py` plus token scoring in `protocol/search.py`; fine at seed
   scale, first thing to replace (Bedrock Knowledge Base / OpenSearch) if the
