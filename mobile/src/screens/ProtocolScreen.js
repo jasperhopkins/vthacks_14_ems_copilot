@@ -194,7 +194,11 @@ function AskTab({ encounterId, navigation }) {
           <Section title="Answer">
             <Text style={styles.answer}>{answer.answer}</Text>
           </Section>
-          <Section title="Matched protocols" hidden={!answer.matches?.length}>
+          {/* The answer is phrased by a model from these records, so the
+              records -- and where they came from -- travel with it. An
+              answer a medic cannot trace back to a citable guideline is
+              not usable in the field. */}
+          <Section title="Sources for this answer" hidden={!answer.matches?.length}>
             {(answer.matches || []).map((m) => (
               <Pressable
                 key={m.protocol_id}
@@ -208,9 +212,28 @@ function AskTab({ encounterId, navigation }) {
                   {m.protocol_id}
                   {typeof m.score === "number" ? ` · match ${Math.round(m.score * 100)}%` : ""}
                 </Text>
+                {!!m.source_document && (
+                  <Text style={styles.citation}>
+                    {m.source_document}
+                    {m.source_version ? `, v${m.source_version}` : ""}
+                    {m.source_page ? `, p.${m.source_page}` : ""}
+                  </Text>
+                )}
+                {m.matched_terms?.length > 0 && (
+                  <Text style={styles.matchedOn}>
+                    matched on: {m.matched_terms.join(", ")}
+                  </Text>
+                )}
+                <Text style={styles.openHint}>Tap to read the full protocol →</Text>
               </Pressable>
             ))}
           </Section>
+
+          <Text style={styles.disclaimer}>
+            Answers are retrieved from the protocol database and phrased, never
+            invented. These are NATIONAL MODEL guidelines — confirm against your
+            agency's own protocols and medical direction before acting.
+          </Text>
         </View>
       )}
     </ScrollView>
@@ -271,6 +294,13 @@ const styles = StyleSheet.create({
   buttonDisabled: { backgroundColor: colors.faint },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   answer: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  citation: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: space.xs },
+  matchedOn: { color: colors.faint, fontSize: 11, fontStyle: "italic" },
+  openHint: { color: colors.accent, fontSize: 12, fontWeight: "600", marginTop: space.xs },
+  disclaimer: {
+    color: colors.muted, fontSize: 11, lineHeight: 17,
+    borderTopWidth: 1, borderTopColor: colors.border, paddingTop: space.md,
+  },
 
   spinner: { marginTop: space.xl },
 });

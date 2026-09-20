@@ -14,7 +14,7 @@ import { api } from "../api/client";
 import { colors, radius, space, severityStyle } from "../theme";
 import { Linking } from "react-native";
 import {
-  Segmented, SearchField, Empty, ErrorText, Section, Chips,
+  Pill, Segmented, SearchField, Empty, ErrorText, Section, Chips,
 } from "../components/ui";
 
 // Four sources feed the interaction check and they are not equally
@@ -29,7 +29,19 @@ export const BASIS_LABEL = {
 
 const MODES = [
   { key: "browse", label: "Formulary" },
-  { key: "interact", label: "Check interaction" },
+  { key: "pairs", label: "Interactions" },
+  { key: "interact", label: "Check pair" },
+];
+
+// Same order the server sorts by. Filtering by source matters because the
+// four layers are not equally authoritative and a medic may want to see
+// only what their agency curated.
+const BASIS_FILTERS = [
+  { key: "all", label: "All sources" },
+  { key: "curated_pair", label: "Curated" },
+  { key: "curated_class", label: "Curated class" },
+  { key: "fda_label", label: "FDA label" },
+  { key: "drug_class", label: "Drug class" },
 ];
 
 function DrugCard({ item, onPress }) {
@@ -121,6 +133,92 @@ function BrowseTab({ navigation }) {
   );
 }
 
+function AllInteractionsTab() {
+  const [rows, setRows] = useState([]);
+  const [checked, setChecked] = useState(0);
+  const [filter, setFilter] = useState("");
+  const [basis, setBasis] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await api.listInteractions();
+      setRows(res.interactions || []);
+      setChecked(res.drugs_checked || 0);
+    } catch (e) {
+      setError(e.message);
+      setRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    load().finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [load]);
+
+  const shown = useMemo(() => {
+    const needle = filter.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (basis !== "all" && r.basis !== basis) return false;
+      if (!needle) return true;
+      return `${r.drug_a} ${r.drug_b} ${r.note}`.toLowerCase().includes(needle);
+    });
+  }, [rows, filter, basis]);
+
+  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+
+  return (
+    <View style={styles.flex}>
+      <View style={styles.controls}>
+        <SearchField
+          value={filter}
+          onChangeText={setFilter}
+          placeholder={`Filter ${rows.length} known interactions…`}
+        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.pillRow}>
+          {BASIS_FILTERS.map((f) => (
+            <Pill key={f.key} label={f.label} active={basis === f.key}
+                  onPress={() => setBasis(f.key)} />
+          ))}
+        </ScrollView>
+      </View>
+      <FlatList
+        data={shown}
+        keyExtractor={(r, i) => `${r.drug_a}|${r.drug_b}|${i}`}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={async () => {
+            setRefreshing(true); await load(); setRefreshing(false);
+          }} />
+        }
+        renderItem={({ item }) => <FlagCard flag={item} />}
+        ListHeaderComponent={
+          <Text style={styles.listNote}>
+            Every contraindicated pair this database knows about, across
+            {" "}{checked} drugs. Absence from this list is not a guarantee of
+            safety — it means no rule here covers that pair.
+          </Text>
+        }
+        ListEmptyComponent={
+          error ? <ErrorText>{error}</ErrorText>
+                : <Empty>No interaction matches that filter.</Empty>
+        }
+        ListFooterComponent={
+          shown.length > 0
+            ? <Text style={styles.footer}>{shown.length} of {rows.length} shown</Text>
+            : null
+        }
+      />
+    </View>
+  );
+}
+
 function InteractionTab({ encounterId }) {
   const [drugA, setDrugA] = useState("epi");
   const [drugB, setDrugB] = useState("propranolol");
@@ -186,7 +284,8 @@ function InteractionTab({ encounterId }) {
 export function FlagCard({ flag }) {
   const tone = severityStyle(flag.severity);
   return (
-    <View style={[styles.flagBox, { backgroundColor: tone.bg, borderColor: tone.fg }]}>
+    <View style={[styles.flagBox, { backgroundColor: tone.bg, borderColor: tone.fg },
+                  styles.flagSpacing]}>
       <View style={styles.cardTop}>
         <Text style={[styles.flagPair, { color: tone.fg }]}>
           {flag.drug_a} + {flag.drug_b}
@@ -217,9 +316,9 @@ export default function DrugScreen({ encounterId, navigation }) {
       <View style={styles.modeBar}>
         <Segmented options={MODES} value={mode} onChange={setMode} />
       </View>
-      {mode === "browse"
-        ? <BrowseTab navigation={navigation} />
-        : <InteractionTab encounterId={encounterId} />}
+      {mode === "browse" && <BrowseTab navigation={navigation} />}
+      {mode === "pairs" && <AllInteractionsTab />}
+      {mode === "interact" && <InteractionTab encounterId={encounterId} />}
     </View>
   );
 }
@@ -235,6 +334,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   list: { padding: space.md, paddingBottom: space.xl, gap: space.sm },
+  pillRow: { gap: space.xs, paddingRight: space.md },
+  listNote: {
+    color: colors.muted, fontSize: 12, lineHeight: 18, marginBottom: space.sm,
+  },
+  footer: { textAlign: "center", color: colors.faint, fontSize: 12, paddingVertical: space.lg },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.border,
@@ -267,6 +371,7 @@ const styles = StyleSheet.create({
   okSub: { color: colors.muted, fontSize: 13, lineHeight: 19 },
 
   flagBox: { padding: space.lg, borderRadius: radius.md, borderWidth: 1, gap: space.xs },
+  flagSpacing: { marginBottom: space.sm },
   flagPair: { fontSize: 15, fontWeight: "700", flex: 1, textTransform: "capitalize" },
   flagSeverity: {
     fontSize: 11, fontWeight: "700", borderWidth: 1,

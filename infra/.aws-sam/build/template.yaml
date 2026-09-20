@@ -708,6 +708,27 @@ Resources:
             Method: GET
     Metadata:
       SamResourceId: DrugListFunction
+  DrugInteractionListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: DrugInteractionListFunction
+      Handler: browse.interactions_handler
+      Role:
+        Fn::GetAtt:
+        - EncounterFunctionsRole
+        - Arn
+      Layers:
+      - Ref: CommonLayer
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /drug/interactions
+            Method: GET
+    Metadata:
+      SamResourceId: DrugInteractionListFunction
   TranslateFunction:
     Type: AWS::Serverless::Function
     Properties:

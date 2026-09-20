@@ -34,6 +34,6 @@ architecture = "x86_64"
 handler = "app.lookup_handler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["DrugListFunction", "DrugLookupFunction", "DrugInteractionFunction"]
+functions = ["DrugListFunction", "DrugInteractionListFunction", "DrugLookupFunction", "DrugInteractionFunction"]
 
 [layer_build_definitions]

@@ -189,6 +189,7 @@ Every route sits behind the same Cognito JWT authorizer
 | `GET /protocol/list` | `src/protocol/browse.py:list_handler` | `api.listProtocols` |
 | `GET /protocol/{protocol_id}` | `src/protocol/browse.py:detail_handler` | `api.getProtocol` |
 | `GET /drug/list` | `src/drug/browse.py:list_handler` | `api.listDrugs` |
+| `GET /drug/interactions` | `src/drug/browse.py:interactions_handler` | `api.listInteractions` |
 | `POST /translate` | `src/translate/app.py:handler` | `api.translate` |
 | `POST /drug/lookup` | `src/drug/app.py:lookup_handler` | `api.lookupDrug` |
 | `POST /drug/check-interaction` | `src/drug/app.py:interaction_handler` | `api.checkInteraction` |
@@ -331,9 +332,26 @@ endpoint is a four-file change:
   carries its aliases instead, which doubles as "what do I call this on the
   radio". Filtering in the app searches those aliases, so typing "narcan"
   finds naloxone exactly as saying it would.
-- **Interaction flags render their `basis`.** A curated clinical rule and
-  one derived from RxClass classes say so differently on screen — they are
-  different levels of authority and must not read identically.
+- **Interaction flags render their `basis`**, and label-derived ones link
+  to DailyMed. Four sources of differing authority must not read
+  identically on screen.
+- **`GET /drug/interactions` lists every flagged pair**, computed from one
+  scan via `common/drugs.all_interactions`. It shares `_pair_flag` with
+  `check_interactions`, so the browse list and a one-off check cannot
+  disagree — a test asserts every listed pair reproduces under the pair
+  check with the same basis and severity. It is **recomputed per request,
+  not stored**: the rules live in four places that refresh independently,
+  and a cached pair list is one more thing that can silently drift.
+  `all_interactions` sorts its input **before** pairing, because
+  `combinations` preserves input order and a DynamoDB scan does not return
+  rows in a stable one — without it the same interaction appeared as
+  "nitroglycerin + sildenafil" on one request and reversed on the next.
+- **The protocol assistant shows its sources.** `POST /protocol/query`
+  already returned whole records, so the Ask tab renders each matched
+  protocol's document, version and page under a "Sources for this answer"
+  heading, plus which query terms matched it, and each card opens the full
+  guideline. The answer is phrased by a model from those records; an answer
+  a medic cannot trace to a citable guideline is not usable in the field.
 
 ### Behaviors worth knowing before you edit
 

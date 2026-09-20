@@ -244,6 +244,79 @@ class TestLayeredMerge(unittest.TestCase):
         self.assertEqual(len(flags(["nitroglycerin", "sildenafil", "naloxone"])), 1)
 
 
+class TestAllInteractions(unittest.TestCase):
+    """The browse list. Works on loaded records rather than names, so it
+    must agree exactly with what the pair check would say."""
+
+    def setUp(self):
+        use_table(SEED)
+        self.records = list(SEED.values())
+        self.all = drugs_mod.all_interactions(self.records)
+
+    def test_finds_the_same_pairs_the_pair_check_does(self):
+        """One list, one truth. If these ever diverge, a medic gets a
+        different answer depending on which screen they opened."""
+        for flag in self.all:
+            with self.subTest(f"{flag['drug_a']}+{flag['drug_b']}"):
+                direct = flags([flag["drug_a"], flag["drug_b"]])
+                self.assertEqual(len(direct), 1)
+                self.assertEqual(direct[0]["basis"], flag["basis"])
+                self.assertEqual(direct[0]["severity"], flag["severity"])
+
+    def test_alias_rows_do_not_produce_duplicate_pairs(self):
+        """Pairing aliases would report "epi + inderal" and "epinephrine +
+        propranolol" as two separate interactions."""
+        pairs = {frozenset((f["drug_a"], f["drug_b"])) for f in self.all}
+        self.assertEqual(len(pairs), len(self.all))
+        names = {f["drug_a"] for f in self.all} | {f["drug_b"] for f in self.all}
+        for name in names:
+            with self.subTest(name):
+                self.assertFalse(SEED[name].get("alias_of"), f"{name} is an alias row")
+
+    def test_every_flag_carries_its_basis_and_a_note(self):
+        for flag in self.all:
+            with self.subTest(f"{flag['drug_a']}+{flag['drug_b']}"):
+                self.assertIn(flag["basis"],
+                              {"curated_pair", "curated_class", "fda_label", "drug_class"})
+                self.assertTrue(flag["note"].strip())
+                self.assertTrue(flag["severity"])
+
+    def test_contraindicated_sorts_above_caution(self):
+        ranks = [drugs_mod._SEVERITY_RANK.get(str(f["severity"]).upper(), 9)
+                 for f in self.all]
+        self.assertEqual(ranks, sorted(ranks))
+
+    def test_curated_rules_sort_above_derived_ones(self):
+        within = {}
+        for f in self.all:
+            within.setdefault(f["severity"], []).append(
+                drugs_mod._LAYER_RANK[f["basis"]])
+        for severity, ranks in within.items():
+            with self.subTest(severity):
+                self.assertEqual(ranks, sorted(ranks))
+
+    def test_order_is_stable_regardless_of_scan_order(self):
+        import random
+        rng = random.Random(0)
+        baseline = [(f["drug_a"], f["drug_b"]) for f in self.all]
+        for _ in range(5):
+            shuffled = self.records[:]
+            rng.shuffle(shuffled)
+            got = [(f["drug_a"], f["drug_b"])
+                   for f in drugs_mod.all_interactions(shuffled)]
+            self.assertEqual(got, baseline)
+
+    def test_ignores_malformed_rows(self):
+        self.assertEqual(drugs_mod.all_interactions([None, "junk", {}, {"x": 1}]), [])
+
+    def test_known_pairs_are_present(self):
+        pairs = {frozenset((f["drug_a"], f["drug_b"])) for f in self.all}
+        for a, b in (("epinephrine", "propranolol"), ("epinephrine", "labetalol"),
+                     ("amyl nitrite", "sildenafil"), ("ziprasidone", "droperidol")):
+            with self.subTest(f"{a}+{b}"):
+                self.assertIn(frozenset((a, b)), pairs)
+
+
 class TestClassExclusions(unittest.TestCase):
     """A reviewed override of a derived classification."""
 

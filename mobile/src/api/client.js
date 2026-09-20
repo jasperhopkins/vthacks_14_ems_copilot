@@ -69,6 +69,7 @@ export const api = {
   listProtocols: () => request("/protocol/list"),
   getProtocol: (protocolId) => request(`/protocol/${encodeURIComponent(protocolId)}`),
   listDrugs: () => request("/drug/list"),
+  listInteractions: () => request("/drug/interactions"),
 
   queryProtocol: (query, weightKg, encounterId) =>
     request("/protocol/query", {

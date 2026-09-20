@@ -691,6 +691,24 @@ Resources:
             Path: /drug/list
             Method: GET
 
+  # Every flagged pair in the formulary, for browsing rather than asking.
+  # Shares the scan-and-pair logic with the interaction check so the list
+  # and a one-off check can never disagree.
+  DrugInteractionListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/drug/
+      Handler: browse.interactions_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        ListApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /drug/interactions
+            Method: GET
+
   TranslateFunction:
     Type: AWS::Serverless::Function
     Properties:

@@ -246,46 +246,102 @@ def _label_flag(record: dict, other_canonical: str, other_record: dict) -> dict 
 _LAYER_RANK = {"curated_pair": 0, "curated_class": 1, "fda_label": 2, "drug_class": 3}
 
 
+def _pair_flag(name_a: str, canonical_a: str, record_a: dict | None,
+               name_b: str, canonical_b: str, record_b: dict | None) -> dict | None:
+    """The single flag for one pair, or None.
+
+    Checks BOTH directions through all four layers. Real reference data
+    routinely records a pair on only one of the two drugs -- RxClass puts
+    the nitrate/PDE5 contraindication on nitroglycerin's side and records
+    nothing on sildenafil's -- so a one-way check would miss it.
+
+    `name_*` is what the caller said, `canonical_*` what it resolved to;
+    the flag reports the former so an EMT sees the word they used.
+    """
+    # The same drug said two ways ("epi" and "epinephrine") is not an
+    # interaction with itself.
+    if canonical_a == canonical_b:
+        return None
+
+    hit = None
+    for first, first_record, second_canonical, second_record in (
+        (name_a, record_a, canonical_b, record_b),
+        (name_b, record_b, canonical_a, record_a),
+    ):
+        if not first_record:
+            continue
+        found = (_curated_flag(first_record, second_canonical)
+                 or _curated_class_flag(first_record, second_record)
+                 or _label_flag(first_record, second_canonical, second_record)
+                 or _class_flag(first_record, second_record))
+        if not found:
+            continue
+        # Keep whichever layer ranks highest, whichever direction matched
+        # it first.
+        if hit is None or _LAYER_RANK[found["basis"]] < _LAYER_RANK[hit["basis"]]:
+            other = name_b if first == name_a else name_a
+            hit = {"drug_a": first, "drug_b": other, **found}
+        if hit["basis"] == "curated_pair":
+            break
+    return hit
+
+
 def check_interactions(drug_names: list[str]) -> list[dict]:
     """Flag contraindicated pairs among the given drugs.
 
-    Checks each pair in BOTH directions and through both rule layers. Real
-    reference data routinely records a pair on only one of the two drugs --
-    RxClass, for instance, puts the nitrate/PDE5 contraindication on
-    nitroglycerin's side as an MoA it must not meet, and records nothing on
-    sildenafil's -- so a one-way check would miss it.
-
-    Emits at most one flag per pair, preferring the curated rule: its note
-    is written for a medic, the class-derived one is generated.
+    One DynamoDB read per distinct name, then pure logic. Emits at most one
+    flag per pair, preferring the highest-authority layer that matches --
+    a curated note is written for a medic, a derived one is generated.
     """
     resolved = {name: resolve_drug(name) for name in drug_names}
 
     flags = []
     for a, b in combinations(drug_names, 2):
-        canonical_a = resolved[a][0]
-        canonical_b = resolved[b][0]
-        # The same drug said two ways ("epi" and "epinephrine") is not an
-        # interaction with itself.
-        if canonical_a == canonical_b:
-            continue
-
-        hit = None
-        for first, second in ((a, b), (b, a)):
-            record = resolved[first][1]
-            if not record:
-                continue
-            canonical_second, record_second = resolved[second]
-            found = (_curated_flag(record, canonical_second)
-                     or _curated_class_flag(record, record_second)
-                     or _label_flag(record, canonical_second, record_second)
-                     or _class_flag(record, record_second))
-            if found:
-                # Keep whichever layer ranks highest, whichever direction
-                # matched it first.
-                if hit is None or _LAYER_RANK[found["basis"]] < _LAYER_RANK[hit["basis"]]:
-                    hit = {"drug_a": first, "drug_b": second, **found}
-                if hit["basis"] == "curated_pair":
-                    break
+        canonical_a, record_a = resolved[a]
+        canonical_b, record_b = resolved[b]
+        hit = _pair_flag(a, canonical_a, record_a, b, canonical_b, record_b)
         if hit:
             flags.append(hit)
+    return flags
+
+
+# Flags sort by how loudly they need to be read, then by source authority,
+# then alphabetically so the list is stable between requests.
+_SEVERITY_RANK = {"CONTRAINDICATED": 0, "CAUTION": 1}
+
+
+def all_interactions(records: list[dict]) -> list[dict]:
+    """Every flagged pair in an already-loaded drug table.
+
+    Takes records rather than names because the browse list needs all of
+    them: resolving 69 drugs through `check_interactions` would be 69
+    DynamoDB reads to answer a question one table scan already has the data
+    for. Alias rows are skipped -- they resolve to a record that is already
+    in the list, and pairing them would report "epi + inderal" and
+    "epinephrine + propranolol" as two different interactions.
+    """
+    # Sorted before pairing, not just after. `combinations` preserves input
+    # order, and a DynamoDB scan does not return rows in a stable one -- so
+    # without this the same interaction is reported as "nitroglycerin +
+    # sildenafil" on one request and "sildenafil + nitroglycerin" on the
+    # next, and the final sort cannot repair an orientation that already
+    # differs.
+    real = sorted(
+        (r for r in records
+         if isinstance(r, dict) and r.get("drug_name") and not r.get("alias_of")),
+        key=lambda r: str(r["drug_name"]).lower(),
+    )
+
+    flags = []
+    for a, b in combinations(real, 2):
+        name_a, name_b = str(a["drug_name"]).lower(), str(b["drug_name"]).lower()
+        hit = _pair_flag(name_a, name_a, a, name_b, name_b, b)
+        if hit:
+            flags.append(hit)
+
+    flags.sort(key=lambda f: (
+        _SEVERITY_RANK.get(str(f.get("severity", "")).upper(), 9),
+        _LAYER_RANK.get(f.get("basis", ""), 9),
+        f["drug_a"], f["drug_b"],
+    ))
     return flags
