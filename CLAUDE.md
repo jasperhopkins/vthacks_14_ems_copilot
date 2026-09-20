@@ -85,6 +85,14 @@ time allows:**
 7. **MFA is optional, CORS is `*`** — fine for the demo, called out in
    `docs/HIPAA_NOTES.md` as things to tighten before anything beyond a
    hackathon.
+8. **Cognito self-signup is off** (`AllowAdminCreateUserOnly: true`), so
+   there is no "create account" path — add demo users with
+   `aws cognito-idp admin-create-user` + `admin-set-user-password
+   --permanent`. Don't re-open it to save a step: the pool id and client
+   id ship in `mobile/src/config.js` in a public repo, the client has no
+   secret, and the API's authorizer checks only issuer and audience — so
+   open signup means anyone who reads the repo gets a token that works on
+   every route. See item 7 of `docs/HIPAA_NOTES.md`.
 
 ## Commands
 

@@ -115,7 +115,33 @@ description of what's built here, not "HIPAA compliant."
 6. **Comprehend Medical eligibility and the exact Bedrock model's BAA
    coverage were not independently re-verified against AWS's live list**
    in this scaffolding pass — see the table above.
-7. **Sign-in uses `USER_PASSWORD_AUTH`, not SRP.** The app sends the
+7. **Self-registration is off; accounts are created by an administrator.**
+   `AdminCreateUserConfig.AllowAdminCreateUserOnly` is `true`. This is not
+   a nice-to-have: the user-pool id and the app client id are *not*
+   secrets — a mobile app has to ship them, `mobile/src/config.js` does,
+   and that file is in a public repository. The app client has no secret,
+   and the API's JWT authorizer checks only issuer and audience, with no
+   scopes and no group claim. So while signup was open, anyone who could
+   read the repo could register, self-confirm over the auto-verified email
+   address, and hold a token that satisfied the authorizer on *every*
+   route — the Bedrock, Transcribe, Translate and Polly calls behind them,
+   the encounter and reference tables, and the identity pool's streaming
+   credentials. Closing signup is the control that makes shipping those
+   identifiers safe. Create demo accounts with:
+
+   ```bash
+   aws cognito-idp admin-create-user --user-pool-id <UserPoolId> \
+     --username demo@ems-copilot.test --message-action SUPPRESS
+   aws cognito-idp admin-set-user-password --user-pool-id <UserPoolId> \
+     --username demo@ems-copilot.test --password '<password>' --permanent
+   ```
+
+   Note what this does *not* do: it does not authenticate that a given
+   medic is who they claim to be, and it does not scope one user away from
+   another's encounters. Every authenticated user can still read every
+   encounter. Per-user authorization is still a TODO.
+
+8. **Sign-in uses `USER_PASSWORD_AUTH`, not SRP.** The app sends the
    password to Cognito inside TLS rather than proving knowledge of it
    without transmitting it. This was a deliberate performance trade:
    `amazon-cognito-identity-js` implements SRP in pure JavaScript, and its
@@ -129,7 +155,7 @@ description of what's built here, not "HIPAA compliant."
    PHI, alongside making MFA required (item 1); note the current client
    also has no MFA-challenge branch, so it would need one anyway.
 
-8. **Live transcription hands the device real AWS credentials, and sends
+9. **Live transcription hands the device real AWS credentials, and sends
    audio straight to Transcribe.** This is the one place the phone holds
    anything beyond a Cognito ID token. Amazon Transcribe's streaming API
    is a SigV4-signed WebSocket, and a continuous audio stream cannot be

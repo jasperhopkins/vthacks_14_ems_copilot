@@ -95,6 +95,15 @@ Resources:
       UserPoolName: !Sub "ems-copilot-${Stage}"
       MfaConfiguration: "OPTIONAL"   # flip to REQUIRED before this is anything but a demo
       EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      AdminCreateUserConfig:
+        # No self-registration. The pool id and the app client id are not
+        # secrets -- a mobile app has to ship them, and mobile/src/config.js
+        # does -- so with signup open, anyone who can read the repo could
+        # register, self-confirm over the auto-verified email, and hold a
+        # token that satisfies the API's JWT authorizer on every route. The
+        # authorizer checks issuer and audience, not who you are.
+        # Create demo accounts with `aws cognito-idp admin-create-user`.
+        AllowAdminCreateUserOnly: true
       Policies:
         PasswordPolicy:
           MinimumLength: 12
