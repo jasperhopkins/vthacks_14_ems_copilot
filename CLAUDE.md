@@ -521,6 +521,21 @@ endpoint is a four-file change:
   session, plays, and restarts the microphone — that ordering is the only
   reason a spoken reply is audible at all, not an optimisation. Read
   `node_modules/expo-audio/ios/AudioStream.swift` before changing it.
+- **Talking to Copilot is not patient narration, and conflating the two is
+  what produced empty PCRs.** Every settled segment used to go into
+  `transcriptRef` whole, wake word and all — so a medic who opened
+  hands-free and said "Copilot, transcribe a PCR for this patient" sent
+  *that sentence* as the transcript. It is not clinical content but it is
+  a non-empty string, so the backend's `if not transcript` guard never
+  fired, extraction ran on the command, and the draft came back with every
+  field null. `narrationOf()` now keeps only the text *before* the wake
+  word, and `MIN_TRANSCRIPT_WORDS` (12) in `agent/tools.py` refuses to
+  draft from less than a real account of a call — an empty PCR that looks
+  filed is worse than a refusal, because the medic finds out at the end of
+  the shift instead of while the patient is in front of them.
+  The hands-free screen shows the accumulated narration and its word count
+  live, so "will there be anything in the report" is answerable during the
+  call rather than after it.
 - **"Transcribe a PCR" is a write-up request, and the tool description has
   to say so.** `draft_pcr_from_transcript` was described only as "write it
   up", so a medic asking to *transcribe*, *document*, *chart* or *make a

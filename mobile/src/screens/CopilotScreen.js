@@ -97,8 +97,28 @@ const RECONNECT_DELAYS_MS = [500, 1500, 4000];
 // Dialogue turns replayed into the next request. The backend caps this too.
 const HISTORY_TURNS = 8;
 
+// Mirrors MIN_TRANSCRIPT_WORDS in infra/src/agent/tools.py. The backend is
+// the one that actually refuses; this only warns earlier, on screen, while
+// there is still time to say more.
+const MIN_NARRATION_WORDS = 12;
+
 const DRAFT_POLL_MS = 2500;
 const DRAFT_TIMEOUT_MS = 180000;
+
+/**
+ * The part of a segment that is patient narration rather than talking to
+ * Copilot: everything *before* the wake word.
+ *
+ * Without this the transcript filled up with "Copilot, transcribe a PCR
+ * for this patient" -- which is not clinical content, but is a non-empty
+ * string, so the backend's empty-transcript guard never fired and
+ * extraction ran on the command itself. The result was a PCR with every
+ * field null: the reported "entirely empty draft".
+ */
+function narrationOf(text) {
+  const match = WAKE_WORD.exec(text);
+  return (match ? text.slice(0, match.index) : text).trim();
+}
 
 /** Everything after the wake word, or "" when it was just the name. */
 function commandAfterWake(text) {
@@ -150,6 +170,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // has no copy of it.
   const transcriptRef = useRef("");
   const historyRef = useRef([]);
+  const [narration, setNarration] = useState("");
   // Set while the assistant is talking. Guards both the microphone (fed
   // silence) and the dispatcher (no turn starts while one is in flight).
   const mutedRef = useRef(false);
@@ -161,6 +182,16 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // hands-free session (reviewing a draft, reading a cited guideline), so
   // the blur handler below leaves the microphone alone. See releaseAudio.
   const keepAliveRef = useRef(false);
+
+  /** Add a segment's clinical content to the call transcript, if it has
+   *  any. Mirrored into state so the medic can see what will become the
+   *  report -- an empty draft should never be a surprise at the end. */
+  const recordNarration = useCallback((segment) => {
+    const words = narrationOf(segment);
+    if (!words) return;
+    transcriptRef.current = `${transcriptRef.current} ${words}`.trim();
+    setNarration(transcriptRef.current);
+  }, []);
 
   const handleBuffer = useCallback((buffer) => {
     const pcm = downmixInt16(buffer.data, buffer.channels || 1);
@@ -438,6 +469,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
           ...prev.filter((d) => d.encounterId !== encounterId),
         ]);
         transcriptRef.current = "";
+        setNarration("");
         encounterIdRef.current = newEncounterId(baseEncounterId);
       }
 
@@ -501,7 +533,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       // Everything heard is still narration for the report. Forgetting to
       // record continuations here quietly thinned every PCR drafted after
       // a multi-segment question.
-      transcriptRef.current = `${transcriptRef.current} ${segment}`.trim();
+      recordNarration(segment);
       if (more === null) {
         pendingUtteranceRef.current = `${pendingUtteranceRef.current} ${segment}`.trim();
         armUtteranceTimer();
@@ -530,15 +562,16 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     if (awaitingCommandRef.current && command === null) {
       // They said "Copilot" last time and this is the follow-up.
       awaitingCommandRef.current = false;
-      transcriptRef.current = `${transcriptRef.current} ${segment}`.trim();
+      recordNarration(segment);
       pendingUtteranceRef.current = segment;
       armUtteranceTimer();
       return;
     }
 
     // Anything not addressed to the assistant is still part of the call --
-    // it is the narration that becomes the PCR.
-    transcriptRef.current = `${transcriptRef.current} ${segment}`.trim();
+    // it is the narration that becomes the PCR. The wake word and what
+    // follows it are stripped: talking to Copilot is not patient care.
+    recordNarration(segment);
 
     if (command === null) return;
     if (command === "") {
@@ -550,7 +583,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     pendingUtteranceRef.current = command;
     setAwaiting(true);
     armUtteranceTimer();
-  }, [armUtteranceTimer, dispatch]);
+  }, [armUtteranceTimer, dispatch, recordNarration]);
 
   // `onSettled` is handed to the stream once, at open, so it closes over
   // the first render's callback. A ref keeps the stream calling the
@@ -626,6 +659,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     setTurns([]);
     setHeard("");
     transcriptRef.current = "";
+    setNarration("");
     historyRef.current = [];
     preRollRef.current = [];
     mutedRef.current = false;
@@ -728,6 +762,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   }), [navigation, releaseAudio]);
 
   const live = phase !== "idle" && phase !== "connecting";
+  const narrationWords = narration ? narration.split(/\s+/).length : 0;
   const unfiled = drafts.filter((d) => d.status !== "filed").length;
 
   return (
@@ -787,6 +822,32 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
           <Text style={heard ? styles.caption : styles.waiting} numberOfLines={3}>
             {heard || "Listening…"}
           </Text>
+        </View>
+      )}
+
+      {/* What will actually become the PCR, as it accumulates. Questions
+          put to Copilot are excluded -- talking to the assistant is not
+          patient care -- so this is the honest answer to "will there be
+          anything in the report", visible during the call rather than
+          discovered as an empty draft at the end of it. */}
+      {live && (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
+            Call narration · {narrationWords} word{narrationWords === 1 ? "" : "s"}
+          </Text>
+          {narration ? (
+            <Text style={styles.caption} numberOfLines={6}>{narration}</Text>
+          ) : (
+            <Text style={styles.waiting}>
+              Nothing yet. Narrate the call — age, complaint, vitals, what you gave —
+              and it collects here. Questions to Copilot don’t count towards it.
+            </Text>
+          )}
+          {narration.length > 0 && narrationWords < MIN_NARRATION_WORDS && (
+            <Text style={styles.thin}>
+              Too thin for a report yet — Copilot will say so if you ask now.
+            </Text>
+          )}
         </View>
       )}
 
@@ -997,6 +1058,7 @@ const styles = StyleSheet.create({
   draftFiled: { color: colors.ok, fontWeight: "700", fontSize: 16 },
 
   caption: { color: colors.muted, fontSize: 14, lineHeight: 20, fontStyle: "italic" },
+  thin: { color: colors.warn, fontSize: 12 },
   waiting: { color: colors.faint, fontStyle: "italic" },
 
   boundary: {

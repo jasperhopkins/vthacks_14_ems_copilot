@@ -77,6 +77,14 @@ protocol_table = dynamodb.Table(PROTOCOL_TABLE)
 #: candidate is a wrong answer waiting to be phrased confidently.
 PROTOCOL_CANDIDATES = 3
 
+#: A report needs an actual account of the call behind it. Below this many
+#: words the transcript is a stray phrase or the request itself -- and an
+#: empty PCR that looks filed is worse than no PCR, because the medic finds
+#: out at the end of the shift rather than while the patient is in front of
+#: them. Measured in words, not characters, so a long drug name does not
+#: pass for a narration.
+MIN_TRANSCRIPT_WORDS = 12
+
 #: Steps sent per protocol. A NASEMSO guideline runs to ~6 KB of verbatim
 #: text and three of them blow past a useful context budget for a two
 #: sentence spoken answer. The medic gets the full record on screen; the
@@ -327,10 +335,21 @@ def _draft_pcr_from_transcript(ctx: ToolContext) -> ToolResult:
     inside an agent loop that has spent some of it.
     """
     transcript = (ctx.transcript or "").strip()
-    if not transcript:
+    words = len(transcript.split())
+    if words < MIN_TRANSCRIPT_WORDS:
+        # Not a formality. Extraction over a couple of words returns a PCR
+        # with every field null, which is indistinguishable on screen from
+        # a report that genuinely found nothing -- so refuse, and say why.
         return ToolResult(content={
             "started": False,
-            "note": "There is no transcript for this call yet -- nothing has been said to write up.",
+            "words_heard": words,
+            "note": (
+                f"Only {words} words of this call have been heard, which is not enough "
+                "to write a report from. Tell the medic plainly that you have not heard "
+                "enough of the call yet, and that they should narrate what happened -- "
+                "age, complaint, vitals, what was given -- and then ask again. Do NOT "
+                "start a report from this."
+            ),
         })
     if not FINALIZE_FUNCTION:
         return ToolResult(content={
