@@ -46,6 +46,7 @@ description of what's built here, not "HIPAA compliant."
 | Amazon Transcribe | Speech-to-text for voice-to-PCR | Eligible | High — confirmed via official AWS ML blog |
 | Amazon Translate | Medical translator module | Eligible | High — confirmed via official AWS ML blog |
 | Amazon Polly | Spoken translation playback | Eligible | High — confirmed via official AWS ML blog |
+| Amazon Comprehend | Language identification for the translator (`DetectDominantLanguage`) | Eligible | Medium — the general-purpose Comprehend service is separate from Comprehend Medical below and is reported eligible, but **re-confirm against the live list before real use**. Note what this call sees: it is handed the patient's own utterance, so it is PHI-bearing on the same footing as Translate. Only the first 1000 characters are sent (`DETECT_SAMPLE_CHARS`), which is a cost measure, not a privacy control. |
 | Amazon Comprehend Medical | Drug name normalization (RxNorm) | Eligible | Medium — widely reported as eligible (it's purpose-built for PHI/clinical text) but not independently re-confirmed against the live AWS list today; **verify before real use** |
 | Amazon Textract | Not currently used, but relevant if you add document/label OCR later | Eligible | High — confirmed via official 2019 AWS announcement |
 | Amazon Bedrock | PCR field extraction, protocol Q&A summarization | Eligible **with caveats** | Medium — Bedrock itself is on AWS's eligible list, but coverage has been reported as model-specific and feature-specific (e.g. fine-tuning / model customization may need extra verification). **You must confirm the exact model ID you deploy (`BedrockModelId`, pinned in `infra/samconfig.toml`) is currently BAA-covered before sending it real PHI.** The deployed default is `amazon.nova-pro-v1:0` — an AWS first-party model, which keeps this question inside the AWS BAA rather than adding a third-party model provider's terms on top. Handlers call Bedrock through the provider-agnostic Converse API, so switching models is a config change; re-verify coverage (and re-run `infra/tests/eval_models.py`) when you do. |
@@ -158,6 +159,16 @@ description of what's built here, not "HIPAA compliant."
      needs no identity pool. If the credential exposure above is
      unacceptable for a given deployment, that is the fallback — delete
      the identity pool and point the app back at it.
+   - **The medical translator now uses this same path**, in both
+     directions, including the patient's own speech with
+     `identify-language` on. Everything above applies unchanged, with one
+     addition specific to it: the set of languages the app offers to
+     identify between is sent to AWS in the query string of the signed
+     URL, so it is visible to anything that can see the request metadata.
+     That set is a fixed list of 16 languages (`common/languages.py`),
+     identical for every encounter, so it reveals nothing about the
+     patient — but it would if a deployment ever narrowed the options
+     per-call based on who the patient is. Don't.
 
 ## For the hackathon demo itself
 

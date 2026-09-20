@@ -41,6 +41,15 @@ function signingKey(secretKey, dateStamp, region) {
 }
 
 /**
+ * @param languageCode     the locale to transcribe, when it is known.
+ * @param languageOptions  locales to identify between, when it is not.
+ *   Passing these switches Transcribe into language identification and
+ *   `language-code` is omitted -- sending both is rejected at the
+ *   handshake ("You cannot specify language code when using language
+ *   identification"). Transcribe requires at least two options, and
+ *   validates every code up front, so a locale that is merely plausible
+ *   (Polly's "cmn-CN", say) closes the socket instead of falling back.
+ * @param preferredLanguage tie-breaker among `languageOptions`.
  * @returns a wss:// URL valid for `expiresIn` seconds.
  */
 export function presignTranscribeWebSocket({
@@ -48,6 +57,8 @@ export function presignTranscribeWebSocket({
   region,
   sampleRate,
   languageCode = "en-US",
+  languageOptions = null,
+  preferredLanguage = null,
   expiresIn = 300,
   now = new Date(),
 }) {
@@ -65,7 +76,6 @@ export function presignTranscribeWebSocket({
     "X-Amz-Date": stamp,
     "X-Amz-Expires": String(expiresIn),
     "X-Amz-SignedHeaders": "host",
-    "language-code": languageCode,
     "media-encoding": "pcm",
     "sample-rate": String(sampleRate),
     // Stops the tail of the live transcript from rewriting itself on every
@@ -73,6 +83,14 @@ export function presignTranscribeWebSocket({
     "enable-partial-results-stabilization": "true",
     "partial-results-stability": "medium",
   };
+  const identify = Array.isArray(languageOptions) && languageOptions.length > 1;
+  if (identify) {
+    params["identify-language"] = "true";
+    params["language-options"] = languageOptions.join(",");
+    if (preferredLanguage) params["preferred-language"] = preferredLanguage;
+  } else {
+    params["language-code"] = languageCode;
+  }
   if (credentials.sessionToken) params["X-Amz-Security-Token"] = credentials.sessionToken;
 
   const canonicalQuery = Object.keys(params)

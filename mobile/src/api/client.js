@@ -76,10 +76,23 @@ export const api = {
       method: "POST",
       body: { query, patient_weight_kg: weightKg, encounter_id: encounterId },
     }),
-  translate: (text, sourceLang, targetLang, encounterId) =>
+  // The supported set is an intersection of four services' language
+  // coverage (see infra/layers/common/python/common/languages.py), so the
+  // app asks for it instead of keeping a copy that can drift out of step
+  // with what the backend will actually accept.
+  listLanguages: () => request("/translate/languages"),
+  // sourceLang "auto" identifies the language from the text and returns
+  // it as source_lang, with a confidence score.
+  translate: (text, sourceLang, targetLang, encounterId, { speak = true } = {}) =>
     request("/translate", {
       method: "POST",
-      body: { text, source_lang: sourceLang, target_lang: targetLang, encounter_id: encounterId },
+      body: {
+        text,
+        source_lang: sourceLang,
+        target_lang: targetLang,
+        encounter_id: encounterId,
+        speak,
+      },
     }),
   lookupDrug: (drugName, encounterId) =>
     request("/drug/lookup", { method: "POST", body: { drug_name: drugName, encounter_id: encounterId } }),

@@ -14,7 +14,10 @@ four features sharing a common `encounter_id` and audit trail:
    extracts structured fields → saved to DynamoDB.
 2. **Protocol/dosage assistant** (`infra/src/protocol/`) — retrieval-only
    (never free-generated) answers from a curated protocol table.
-3. **Medical translator** (`infra/src/translate/`) — Translate + Polly.
+3. **Medical translator** (`infra/src/translate/`) — two-way, 16
+   languages. Medic speaks English -> Translate -> Polly speaks it to the
+   patient; patient speaks an *unknown* language -> Transcribe identifies
+   it from the audio -> Comprehend confirms it from the text -> English.
 4. **Drug reference/interactions** (`infra/src/drug/`) — lookup +
    contraindication flagging, shared data source for module 2's dosage
    answers.
@@ -95,6 +98,7 @@ python3 infra/tests/test_protocol_search.py # protocol ranking + seed data
 python3 infra/tests/test_drug_classes.py    # class-level interactions + RxClass parsing
 python3 infra/tests/test_nasemso_ingest.py  # PDF parsing + extracted seed + retrieval floor
 python3 infra/tests/test_drug_sources.py    # FDA label mining + formulary parsing + layer merge
+python3 infra/tests/test_languages.py       # translator language table consistency
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
@@ -191,6 +195,7 @@ Every route sits behind the same Cognito JWT authorizer
 | `GET /drug/list` | `src/drug/browse.py:list_handler` | `api.listDrugs` |
 | `GET /drug/interactions` | `src/drug/browse.py:interactions_handler` | `api.listInteractions` |
 | `POST /translate` | `src/translate/app.py:handler` | `api.translate` |
+| `GET /translate/languages` | `src/translate/languages.py:list_handler` | `api.listLanguages` |
 | `POST /drug/lookup` | `src/drug/app.py:lookup_handler` | `api.lookupDrug` |
 | `POST /drug/check-interaction` | `src/drug/app.py:interaction_handler` | `api.checkInteraction` |
 
@@ -218,6 +223,8 @@ Expo app (Cognito-authenticated)
 | `infra/src/pcr/status.py` | PCR poll target: Bedrock extraction + drug cross-check |
 | `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
+| `infra/layers/common/python/common/languages.py` | The translator's language table — every code the four services want, and which ones AWS actually accepts |
+| `mobile/src/api/micStream.js` | `useVoiceCapture` — mic -> Transcribe, shared by the PCR recorder and the translator |
 | `infra/seed/rxclass.py` | NLM RxClass client — seed-time only, never called from a Lambda |
 | `infra/seed/openfda.py` | FDA label mining — seed-time only, extractive, never a model |
 | `infra/seed/ingest_nasemso_meds.py` | NASEMSO Appendix III → the 65-drug EMS formulary |
@@ -374,6 +381,41 @@ endpoint is a four-file change:
   - Sample rate is read from `stream.sampleRate` *after* `stream.start()`
     and baked into the signed URL. It can't be assumed — the hardware may
     refuse 16 kHz, and a mismatch produces garbled text, not an error.
+- **The translator works in both directions, and only one of them knows
+  what language it is dealing with.** Medic -> patient is ordinary: English
+  in, chosen language out, Polly speaks it. Patient -> medic is the reason
+  the feature exists — a medic who does not know what they are hearing
+  cannot pick a "translate from" language, so the language is identified
+  twice, independently: **Amazon Transcribe** identifies it from the audio
+  (`identify-language` + `language-options`, signed on the device like the
+  PCR stream) and **Amazon Comprehend** re-identifies it from the resulting
+  text server-side, with a confidence score. The app sends `source_lang:
+  "auto"` and *discards* Transcribe's locale rather than trusting it: two
+  services agreeing is the bar for naming a language on screen in front of
+  a medic. Below `LOW_CONFIDENCE` (0.70) the turn renders as uncertain and
+  offers the runner-ups instead of asserting a language.
+- **The 16 supported languages are an intersection, not a wish list, and
+  the four services disagree about codes.** `common/languages.py` is the
+  single source of truth and the app fetches it (`GET
+  /translate/languages`) rather than keeping a copy. Translate wants
+  `zh`, Transcribe wants `zh-CN`, Polly wants `cmn-CN` — and Transcribe
+  *rejects* `cmn-CN`, at handshake time, with the socket closing and no
+  usable error on a phone. Three languages (Vietnamese, Tagalog, Haitian
+  Creole) have no Polly voice at all; that is a supported state
+  (`can_speak: false`, the app shows text and says why), not a gap to fill.
+  Every code, voice and engine in the table was verified against the live
+  account; don't add a row because a service's docs list the language.
+  **Somali is excluded deliberately** even though all four services
+  support it — the round trip turned "chest pain" into "pain in the
+  ankle", and a translator that confidently relocates a symptom is worse
+  than one that admits it doesn't speak the language. Re-measure before
+  re-adding.
+- **`polly.synthesize_speech` is called with `Engine` always set**, because
+  it defaults to `standard` and several voices in the table are
+  neural-only (Hala, Kajal) — omitting it 400s rather than sounding worse.
+  Arabic and Hindi also need `LanguageCode`: their voices are filed under
+  another locale (Kajal is an `en-IN` voice that also speaks `hi-IN`) and
+  without it they read the text with the wrong phonology.
 - **Extraction is asynchronous and the client polls for it.**
   `/pcr/finalize` persists the transcript, marks the record `EXTRACTING`,
   re-invokes its own Lambda with `InvocationType="Event"`, and returns

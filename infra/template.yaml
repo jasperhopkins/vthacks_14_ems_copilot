@@ -485,6 +485,14 @@ Resources:
                 Effect: Allow
                 Action: [translate:TranslateText, polly:SynthesizeSpeech]
                 Resource: "*"
+              # Language identification for the patient -> medic direction.
+              # Non-medical Comprehend, distinct from the ComprehendMedical
+              # grant above: DetectDominantLanguage lives in the general
+              # service and is not reachable through comprehendmedical:*.
+              - Sid: ComprehendLanguageDetection
+                Effect: Allow
+                Action: [comprehend:DetectDominantLanguage]
+                Resource: "*"
 
   # ---------------------------------------------------------------------
   # Lambda functions
@@ -723,6 +731,23 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /translate
             Method: POST
+
+  # The app asks for the supported-language table rather than shipping its
+  # own copy -- see src/translate/languages.py for why that matters.
+  TranslateLanguagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/translate/
+      Handler: languages.list_handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      Events:
+        LanguagesApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /translate/languages
+            Method: GET
 
   DrugLookupFunction:
     Type: AWS::Serverless::Function

@@ -90,5 +90,39 @@ ok("signing is deterministic for a fixed clock", url === presignTranscribeWebSoc
 ok("a different sample rate changes the signature",
   presignTranscribeWebSocket({ ...signOpts, sampleRate: 8000 }) !== url);
 
+// --- language identification -------------------------------------------
+// The patient-speaks direction of the translator. Transcribe rejects
+// `language-code` together with `identify-language` ("You cannot specify
+// language code when using language identification"), and rejects fewer
+// than two options ("you must provide at least two language codes"), so
+// both are shape errors that have to be caught here rather than by a
+// closed socket with no usable error on a phone.
+const lidUrl = presignTranscribeWebSocket({
+  ...signOpts,
+  languageOptions: ["en-US", "es-US", "vi-VN"],
+  preferredLanguage: "en-US",
+});
+const lid = new URL(lidUrl.replace("wss://", "https://")).searchParams;
+
+ok("identification mode sets identify-language", lid.get("identify-language") === "true");
+ok("language options are sent comma-joined",
+  lid.get("language-options") === "en-US,es-US,vi-VN");
+ok("preferred language is carried", lid.get("preferred-language") === "en-US");
+ok("identification mode omits language-code", lid.get("language-code") === null);
+ok("identification changes the signature", lidUrl !== url);
+
+const lidKeys = lidUrl.split("?")[1].replace(/&X-Amz-Signature=.*$/, "")
+  .split("&").map((kv) => decodeURIComponent(kv.split("=")[0]));
+ok("identification query is still sorted",
+  JSON.stringify(lidKeys) === JSON.stringify([...lidKeys].sort()));
+// The comma in language-options has to be percent-encoded in the canonical
+// query or the signature does not match what AWS recomputes.
+ok("the comma in language-options is encoded",
+  /language-options=en-US%2Ces-US%2Cvi-VN/.test(lidUrl));
+
+ok("a single option is not enough to switch modes",
+  new URL(presignTranscribeWebSocket({ ...signOpts, languageOptions: ["en-US"] })
+    .replace("wss://", "https://")).searchParams.get("language-code") === "en-US");
+
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

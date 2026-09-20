@@ -26,6 +26,7 @@ import {
 } from "expo-audio";
 import { api } from "../api/client";
 import { openTranscribeStream } from "../api/transcribeStream";
+import { downmixInt16 } from "../api/micStream";
 import PcrDocument from "../components/PcrDocument";
 import { colors, radius, space } from "../theme";
 
@@ -40,20 +41,6 @@ const PHASE_LABEL = {
   extracting: "Extracting PCR fields…",
   saving: "Filing the report…",
 };
-
-/** Interleaved multi-channel int16 -> mono, averaged. */
-function downmixInt16(arrayBuffer, channels) {
-  if (channels <= 1) return arrayBuffer;
-  const input = new Int16Array(arrayBuffer);
-  const frames = Math.floor(input.length / channels);
-  const mono = new Int16Array(frames);
-  for (let i = 0; i < frames; i++) {
-    let sum = 0;
-    for (let c = 0; c < channels; c++) sum += input[i * channels + c];
-    mono[i] = sum / channels;
-  }
-  return mono.buffer;
-}
 
 export default function PcrScreen({ encounterId: baseEncounterId, navigation }) {
   const [phase, setPhase] = useState("idle");

@@ -25,14 +25,30 @@ const MIN_SEND_BYTES = 3200;
 const DRAIN_TIMEOUT_MS = 15000;
 const OPEN_TIMEOUT_MS = 15000;
 
+/**
+ * @param languageOptions  when given (2+ locales), Transcribe identifies
+ *   which one is being spoken instead of being told; `onUpdate` then
+ *   reports it as `languageCode`. This is the patient-speaks direction of
+ *   the translator -- a medic who does not know what language they are
+ *   hearing cannot pass a `languageCode`.
+ */
 export async function openTranscribeStream({
   sampleRate = 16000,
   languageCode = "en-US",
+  languageOptions = null,
+  preferredLanguage = null,
   onUpdate,
   onError,
 } = {}) {
   const credentials = await getAwsCredentials();
-  const url = presignTranscribeWebSocket({ credentials, region: AWS_REGION, sampleRate, languageCode });
+  const url = presignTranscribeWebSocket({
+    credentials,
+    region: AWS_REGION,
+    sampleRate,
+    languageCode,
+    languageOptions,
+    preferredLanguage,
+  });
 
   const ws = new WebSocket(url);
   ws.binaryType = "arraybuffer";
@@ -47,6 +63,12 @@ export async function openTranscribeStream({
   let finished = false;
   let failure = null;
   let drainResolve = null;
+  // Set only when language identification is on. Transcribe refines its
+  // guess as it hears more, and reports the current one on every result;
+  // the last settled (non-partial) result is the one to trust, so a
+  // settled verdict is never overwritten by a later partial's guess.
+  let detectedLanguage = null;
+  let detectedSettled = false;
 
   function transcript() {
     return [...results.values()].map((r) => r.text).join(" ").replace(/\s+/g, " ").trim();
@@ -107,10 +129,15 @@ export async function openTranscribeStream({
         const text = result.Alternatives?.[0]?.Transcript;
         if (typeof text !== "string") continue;
         results.set(result.ResultId, { text, isPartial: !!result.IsPartial });
+        if (result.LanguageCode && !detectedSettled) {
+          detectedLanguage = result.LanguageCode;
+          detectedSettled = !result.IsPartial;
+        }
       }
       onUpdate?.({
         transcript: transcript(),
         isPartial: [...results.values()].some((r) => r.isPartial),
+        languageCode: detectedLanguage,
       });
     }
   };
@@ -173,6 +200,9 @@ export async function openTranscribeStream({
       if (failure && !transcript()) throw failure;
       return transcript();
     },
+
+    /** The identified locale ("es-US"), or null when not identifying. */
+    get languageCode() { return detectedLanguage; },
 
     abort() {
       finished = true;
