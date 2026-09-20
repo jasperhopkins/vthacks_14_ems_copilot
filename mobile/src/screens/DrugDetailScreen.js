@@ -11,10 +11,10 @@
 // assistant's job, behind medical direction, and this screen is a
 // reference page.
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Linking } from "react-native";
 import { api } from "../api/client";
-import { colors, radius, space } from "../theme";
-import { Section, Chips, BulletList, ErrorText } from "../components/ui";
+import { colors, radius, shadow, space, type } from "../theme";
+import { Busy, Section, Chips, BulletList, ErrorText } from "../components/ui";
 
 export default function DrugDetailScreen({ route }) {
   const { drugName } = route.params || {};
@@ -39,7 +39,7 @@ export default function DrugDetailScreen({ route }) {
     return () => { active = false; };
   }, [drugName]);
 
-  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (loading) return <Busy label="Loading the drug record…" />;
   if (error) return <ErrorText>{error}</ErrorText>;
   if (!drug) return <ErrorText>Not found.</ErrorText>;
 
@@ -136,25 +136,23 @@ export default function DrugDetailScreen({ route }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  body: { padding: space.md, gap: space.xl, paddingBottom: space.xl * 2 },
+  body: { padding: space.lg, gap: space.xl, paddingBottom: space.xl * 2 },
   header: { gap: space.xs },
-  title: { fontSize: 22, fontWeight: "700", color: colors.text, textTransform: "capitalize" },
+  title: { fontSize: 24, fontWeight: "800", color: colors.text, textTransform: "capitalize", letterSpacing: -0.4 },
   meta: { color: colors.muted, fontSize: 14 },
 
   doseGrid: { flexDirection: "row", gap: space.sm },
   doseBox: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: radius.md,
+    flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: space.lg, gap: space.xs,
+    ...shadow.card,
   },
-  doseLabel: {
-    fontSize: 11, fontWeight: "700", color: colors.accent,
-    textTransform: "uppercase", letterSpacing: 0.6,
-  },
+  doseLabel: { ...type.label, color: colors.accent },
   doseText: { color: colors.text, fontSize: 14, lineHeight: 20 },
 
   classNote: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   noteBox: {
-    backgroundColor: colors.dangerSoft, borderRadius: radius.md,
+    backgroundColor: colors.dangerSoft, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.danger, padding: space.lg, gap: space.xs,
   },
   noteWith: {
@@ -163,13 +161,15 @@ const styles = StyleSheet.create({
   },
   noteText: { color: colors.text, fontSize: 13, lineHeight: 20 },
   formularyBox: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: space.lg,
+    ...shadow.card,
   },
   labelBox: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: space.lg,
     gap: space.xs, marginBottom: space.sm,
+    ...shadow.card,
   },
   labelTarget: {
     color: colors.danger, fontWeight: "700", fontSize: 13,
@@ -177,7 +177,6 @@ const styles = StyleSheet.create({
   },
   labelQuote: { color: colors.text, fontSize: 13, lineHeight: 20, fontStyle: "italic" },
   labelMeta: { color: colors.faint, fontSize: 11 },
-  labelLink: { color: colors.accent, fontSize: 12, fontWeight: "600" },
+  labelLink: { color: colors.accent, fontSize: 12, fontWeight: "700" },
   prose: { color: colors.muted, fontSize: 13, lineHeight: 20 },
-  spinner: { marginTop: space.xl },
 });

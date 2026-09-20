@@ -4,7 +4,16 @@
     "slug": "ems-copilot",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "scheme": "emscopilot",
+    "primaryColor": "#0E8A50",
+    "backgroundColor": "#F1F7F3",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F1F7F3"
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -14,10 +23,18 @@
     "android": {
       "permissions": [
         "RECORD_AUDIO"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0E8A50"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "note": "Use Expo Go (no Mac/Xcode needed) to demo: `expo start`, scan the QR code with the Expo Go app on any iPhone or Android device. EAS Build (cloud-based) is only needed for an installable/TestFlight binary."
+      "note": "Use Expo Go (no Mac/Xcode needed) to demo: `expo start`, scan the QR code with the Expo Go app on any iPhone or Android device. EAS Build (cloud-based) is only needed for an installable/TestFlight binary.",
+      "assets": "assets/*.png are generated from the vector mark in src/components/Logo.js -- see the note at the top of that file."
     },
     "plugins": [
       "expo-audio"

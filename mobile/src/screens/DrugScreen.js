@@ -7,14 +7,13 @@
 // this on the radio".
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View, Text, FlatList, Pressable, ScrollView, StyleSheet,
-  ActivityIndicator, RefreshControl,
+  View, Text, FlatList, Pressable, ScrollView, StyleSheet, RefreshControl,
 } from "react-native";
 import { api } from "../api/client";
-import { colors, radius, space, severityStyle } from "../theme";
+import { colors, radius, shadow, space, type, severityStyle } from "../theme";
 import { Linking } from "react-native";
 import {
-  Pill, Segmented, SearchField, Empty, ErrorText, Section, Chips,
+  Pill, Segmented, SearchField, Empty, ErrorText, ErrorBox, Chips, Button, Busy, Field,
 } from "../components/ui";
 
 // Four sources feed the interaction check and they are not equally
@@ -46,7 +45,11 @@ const BASIS_FILTERS = [
 
 function DrugCard({ item, onPress }) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+    >
       <View style={styles.cardTop}>
         <Text style={styles.cardTitle}>{item.drug_name}</Text>
         {item.has_interactions && <Text style={styles.warnBadge}>⚠</Text>}
@@ -96,7 +99,7 @@ function BrowseTab({ navigation }) {
         .toLowerCase().includes(needle));
   }, [drugs, filter]);
 
-  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (loading) return <Busy label="Loading the formulary…" />;
 
   return (
     <View style={styles.flex}>
@@ -170,7 +173,7 @@ function AllInteractionsTab() {
     });
   }, [rows, filter, basis]);
 
-  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (loading) return <Busy label="Computing every flagged pair…" />;
 
   return (
     <View style={styles.flex}>
@@ -245,19 +248,22 @@ function InteractionTab({ encounterId }) {
         Field names work — "epi", "narcan", "ntg" all resolve. Checks curated
         pairs and drug-class rules together.
       </Text>
-      <SearchField value={drugA} onChangeText={setDrugA} placeholder="First drug" />
-      <SearchField value={drugB} onChangeText={setDrugB} placeholder="Second drug"
-                   onSubmitEditing={check} returnKeyType="search" />
-      <Pressable
-        style={[styles.button, (!drugA || !drugB || loading) && styles.buttonDisabled]}
+      <Field label="First drug">
+        <SearchField value={drugA} onChangeText={setDrugA} placeholder="e.g. epi" />
+      </Field>
+      <Field label="Second drug">
+        <SearchField value={drugB} onChangeText={setDrugB} placeholder="e.g. propranolol"
+                     onSubmitEditing={check} returnKeyType="search" />
+      </Field>
+      <Button
+        title={loading ? "Checking…" : "Check interaction"}
         onPress={check}
-        disabled={!drugA || !drugB || loading}
-      >
-        <Text style={styles.buttonText}>{loading ? "Checking…" : "Check interaction"}</Text>
-      </Pressable>
+        loading={loading}
+        disabled={!drugA || !drugB}
+        style={{ marginTop: space.xs }}
+      />
 
-      {loading && <ActivityIndicator style={{ marginTop: space.lg }} />}
-      {error && <ErrorText>{error}</ErrorText>}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       {result && (result.safe ? (
         <View style={styles.okBox}>
@@ -326,24 +332,27 @@ export default function DrugScreen({ encounterId, navigation }) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   modeBar: {
-    padding: space.md, backgroundColor: colors.surface,
+    paddingHorizontal: space.lg, paddingVertical: space.md,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   controls: {
-    padding: space.md, backgroundColor: colors.surface,
+    paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  list: { padding: space.md, paddingBottom: space.xl, gap: space.sm },
-  pillRow: { gap: space.xs, paddingRight: space.md },
-  listNote: {
-    color: colors.muted, fontSize: 12, lineHeight: 18, marginBottom: space.sm,
-  },
+  list: { padding: space.lg, paddingBottom: space.xl },
+  pillRow: { gap: space.xs, paddingRight: space.lg },
+  listNote: { ...type.small, fontSize: 12, marginBottom: space.md },
   footer: { textAlign: "center", color: colors.faint, fontSize: 12, paddingVertical: space.lg },
+
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border,
     padding: space.lg, gap: space.xs, marginBottom: space.sm,
+    ...shadow.card,
   },
+  cardPressed: { backgroundColor: colors.bgDeep, borderColor: colors.borderStrong },
   cardTop: { flexDirection: "row", alignItems: "center", gap: space.sm },
   cardTitle: {
     fontSize: 16, fontWeight: "700", color: colors.text, flex: 1,
@@ -353,34 +362,26 @@ const styles = StyleSheet.create({
   cardMeta: { fontSize: 13, color: colors.muted },
   cardSummary: { fontSize: 13, color: colors.faint, lineHeight: 19 },
 
-  askBody: { padding: space.md, gap: space.sm },
-  hint: { color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: space.xs },
-  button: {
-    backgroundColor: colors.accent, borderRadius: radius.sm,
-    paddingVertical: space.md, alignItems: "center",
-  },
-  buttonDisabled: { backgroundColor: colors.faint },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  askBody: { padding: space.lg, gap: space.md, paddingBottom: space.xl * 2 },
+  hint: { ...type.small },
 
   okBox: {
     marginTop: space.lg, padding: space.lg, gap: space.xs,
-    backgroundColor: colors.okSoft, borderRadius: radius.md,
+    backgroundColor: colors.okSoft, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.ok,
   },
   okText: { color: colors.ok, fontWeight: "700", fontSize: 15 },
   okSub: { color: colors.muted, fontSize: 13, lineHeight: 19 },
 
-  flagBox: { padding: space.lg, borderRadius: radius.md, borderWidth: 1, gap: space.xs },
+  flagBox: { padding: space.lg, borderRadius: radius.lg, borderWidth: 1, gap: space.xs },
   flagSpacing: { marginBottom: space.sm },
   flagPair: { fontSize: 15, fontWeight: "700", flex: 1, textTransform: "capitalize" },
   flagSeverity: {
-    fontSize: 11, fontWeight: "700", borderWidth: 1,
-    paddingHorizontal: space.sm, paddingVertical: 1,
-    borderRadius: radius.sm, overflow: "hidden",
+    fontSize: 10, fontWeight: "800", borderWidth: 1, letterSpacing: 0.6,
+    paddingHorizontal: space.sm, paddingVertical: 2,
+    borderRadius: radius.pill, overflow: "hidden",
   },
   flagNote: { color: colors.text, fontSize: 14, lineHeight: 21 },
   flagBasis: { color: colors.muted, fontSize: 12, fontStyle: "italic" },
-  flagLink: { color: colors.accent, fontSize: 12, fontWeight: "600" },
-
-  spinner: { marginTop: space.xl },
+  flagLink: { color: colors.accent, fontSize: 12, fontWeight: "700" },
 });

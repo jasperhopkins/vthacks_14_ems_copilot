@@ -4,10 +4,11 @@
 // what the medic approved is literally what they see later -- no second
 // renderer to drift from the field list in common/pcr.py.
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { api } from "../api/client";
 import PcrDocument from "../components/PcrDocument";
-import { colors, formatTimestamp, radius, space } from "../theme";
+import { Busy, ErrorText } from "../components/ui";
+import { colors, formatTimestamp, radius, shadow, space, type } from "../theme";
 
 export default function PcrDetailScreen({ route }) {
   const { encounterId } = route.params;
@@ -24,8 +25,8 @@ export default function PcrDetailScreen({ route }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <Text style={styles.error}>{error}</Text>;
-  if (!record) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (error) return <ErrorText>{error}</ErrorText>;
+  if (!record) return <Busy label="Loading the report…" />;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -63,21 +64,14 @@ const styles = StyleSheet.create({
   stampMeta: { fontSize: 12, color: colors.faint },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.sm,
+    ...shadow.card,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: colors.muted,
-    textTransform: "uppercase",
-  },
+  sectionTitle: { ...type.label },
   body: { fontSize: 15, color: colors.text, lineHeight: 21 },
   transcript: { fontSize: 14, color: colors.muted, lineHeight: 21, fontStyle: "italic" },
-  spinner: { marginTop: space.xl },
-  error: { color: colors.danger, textAlign: "center", marginTop: space.xl, padding: space.lg },
 });

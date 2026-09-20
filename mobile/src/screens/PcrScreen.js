@@ -17,7 +17,7 @@
 // recordings end in an error even though the PCR had been generated fine.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View, Text, TextInput, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert,
+  View, Text, TextInput, ScrollView, StyleSheet, Alert,
 } from "react-native";
 import {
   useAudioStream,
@@ -29,7 +29,8 @@ import { releaseAudioSession } from "../api/audioSession";
 import { openTranscribeStream } from "../api/transcribeStream";
 import { downmixInt16 } from "../api/micStream";
 import PcrDocument from "../components/PcrDocument";
-import { colors, radius, space } from "../theme";
+import { Banner, Busy, Button, ErrorBox, LinkButton } from "../components/ui";
+import { colors, radius, shadow, space, type } from "../theme";
 
 const SAMPLE_RATE = 16000;
 const DRAFT_POLL_MS = 2000;
@@ -237,19 +238,17 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
             Narrate the patient encounter. Words appear as you speak them; you review and correct the
             generated PCR before it's filed.
           </Text>
-          <Pressable style={[styles.button, styles.primary]} onPress={startRecording}>
-            <Text style={styles.primaryText}>Start Recording</Text>
-          </Pressable>
-          <Pressable onPress={() => navigation?.navigate("SavedPcrs")}>
-            <Text style={styles.link}>View my saved PCRs →</Text>
-          </Pressable>
+          <Button title="Start recording" onPress={startRecording} />
+          <LinkButton
+            title="View my saved PCRs →"
+            onPress={() => navigation?.navigate("SavedPcrs")}
+          />
         </View>
       )}
 
       {phase === "connecting" && (
-        <View style={[styles.card, styles.busyCard]}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.busyText}>{PHASE_LABEL.connecting}</Text>
+        <View style={styles.card}>
+          <Busy label={PHASE_LABEL.connecting} />
         </View>
       )}
 
@@ -260,9 +259,7 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
             <Text style={styles.recTime}>{mmss}</Text>
             <Text style={styles.recMeta}>live</Text>
           </View>
-          <Pressable style={[styles.button, styles.stop]} onPress={stopAndReview}>
-            <Text style={styles.primaryText}>Stop & Review</Text>
-          </Pressable>
+          <Button title="Stop & review" variant="stop" onPress={stopAndReview} />
         </View>
       )}
 
@@ -283,37 +280,34 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
       )}
 
       {(phase === "extracting" || phase === "saving") && (
-        <View style={[styles.card, styles.busyCard]}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.busyText}>{PHASE_LABEL[phase]}</Text>
+        <View style={styles.card}>
+          <Busy label={PHASE_LABEL[phase]} />
         </View>
       )}
 
       {phase === "saved" && (
         <View style={styles.card}>
-          <Text style={styles.savedTitle}>✓ Filed to your PCRs</Text>
-          <Text style={styles.hint}>Encounter {encounterId}</Text>
-          <Pressable style={[styles.button, styles.primary]} onPress={() => navigation?.navigate("SavedPcrs")}>
-            <Text style={styles.primaryText}>View my saved PCRs</Text>
-          </Pressable>
-          <Pressable style={[styles.button, styles.secondary]} onPress={startRecording}>
-            <Text style={styles.secondaryText}>Record another</Text>
-          </Pressable>
+          <View style={styles.savedRow}>
+            <View style={styles.savedTick}><Text style={styles.savedTickMark}>✓</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.savedTitle}>Filed to your PCRs</Text>
+              <Text style={styles.savedMeta} numberOfLines={1}>{encounterId}</Text>
+            </View>
+          </View>
+          <Button title="View my saved PCRs" onPress={() => navigation?.navigate("SavedPcrs")} />
+          <Button title="Record another" variant="secondary" onPress={startRecording} />
         </View>
       )}
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       {(phase === "review" || phase === "saving" || phase === "saved") && draft && (
         <>
           {phase === "review" && (
-            <View style={styles.reviewBanner}>
-              <Text style={styles.reviewTitle}>Review before filing</Text>
-              <Text style={styles.reviewBody}>
-                Every field below was extracted from your narration and is editable. Correcting a
-                medication re-runs the interaction check when you save.
-              </Text>
-            </View>
+            <Banner title="Review before filing">
+              Every field below was extracted from your narration and is editable.
+              Correcting a medication re-runs the interaction check when you save.
+            </Banner>
           )}
 
           <PcrDocument pcr={draft} flags={flags} editable={phase === "review"} onChange={setDraft} />
@@ -333,12 +327,8 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
 
           {phase === "review" && (
             <View style={styles.actions}>
-              <Pressable style={[styles.button, styles.primary]} onPress={commit}>
-                <Text style={styles.primaryText}>Save to my PCRs</Text>
-              </Pressable>
-              <Pressable style={[styles.button, styles.danger]} onPress={discard}>
-                <Text style={styles.dangerText}>Discard</Text>
-              </Pressable>
+              <Button title="Save to my PCRs" onPress={commit} />
+              <Button title="Discard" variant="danger" onPress={discard} />
             </View>
           )}
         </>
@@ -353,63 +343,63 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.md,
+    ...shadow.card,
   },
-  busyCard: { alignItems: "center" },
-  hint: { color: colors.muted, lineHeight: 20 },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: colors.muted,
-    textTransform: "uppercase",
+  hint: { ...type.small, lineHeight: 20 },
+  sectionTitle: { ...type.label },
+
+  // The timer is the one thing a medic checks mid-narration, so it gets
+  // the size, and the dot pulses colour rather than the whole row.
+  recordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
   },
-
-  button: { paddingVertical: space.md, borderRadius: radius.sm, alignItems: "center" },
-  primary: { backgroundColor: colors.accent },
-  primaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  secondary: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  secondaryText: { color: colors.text, fontWeight: "600", fontSize: 15 },
-  stop: { backgroundColor: colors.danger },
-  danger: { backgroundColor: colors.dangerSoft, borderWidth: 1, borderColor: colors.danger },
-  dangerText: { color: colors.danger, fontWeight: "700", fontSize: 15 },
-  link: { color: colors.accent, fontWeight: "600", textAlign: "center" },
-
-  recordRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.danger },
   recDotIdle: { backgroundColor: colors.faint },
-  recTime: { fontSize: 24, fontWeight: "700", color: colors.text, fontVariant: ["tabular-nums"] },
-  recMeta: { color: colors.muted, fontSize: 13 },
+  recTime: {
+    flex: 1, fontSize: 30, fontWeight: "800", color: colors.text,
+    fontVariant: ["tabular-nums"], letterSpacing: -0.5,
+  },
+  recMeta: {
+    color: colors.danger, fontSize: 11, fontWeight: "700",
+    letterSpacing: 1, textTransform: "uppercase",
+  },
 
-  busyText: { color: colors.muted },
-  transcript: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  transcript: { color: colors.text, fontSize: 16, lineHeight: 24 },
   caret: { color: colors.accent, fontWeight: "700" },
   waiting: { color: colors.faint, fontStyle: "italic" },
 
-  reviewBanner: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.lg,
-    gap: space.xs,
+  savedRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  savedTick: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.okSoft, alignItems: "center", justifyContent: "center",
   },
-  reviewTitle: { fontWeight: "700", color: colors.accent },
-  reviewBody: { color: colors.text, fontSize: 13, lineHeight: 19 },
+  savedTickMark: { color: colors.ok, fontSize: 18, fontWeight: "800" },
+  savedTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+  savedMeta: { fontSize: 12, color: colors.faint, marginTop: 1 },
 
   notes: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: space.sm,
-    minHeight: 72,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: space.md,
+    minHeight: 84,
     textAlignVertical: "top",
     color: colors.text,
+    fontSize: 15,
+    lineHeight: 21,
   },
 
   actions: { gap: space.sm },
-  savedTitle: { fontSize: 18, fontWeight: "700", color: colors.ok },
-  error: { color: colors.danger, backgroundColor: colors.dangerSoft, padding: space.md, borderRadius: radius.sm },
 });

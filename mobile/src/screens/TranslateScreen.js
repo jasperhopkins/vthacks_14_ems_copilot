@@ -34,8 +34,8 @@ import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { File, Paths } from "expo-file-system";
 import { api } from "../api/client";
 import { useVoiceCapture } from "../api/micStream";
-import { Segmented, Pill, ErrorText } from "../components/ui";
-import { colors, radius, space } from "../theme";
+import { Banner, Button, Segmented, Pill, ErrorBox } from "../components/ui";
+import { colors, radius, shadow, space, type } from "../theme";
 
 const TO_PATIENT = "to";
 const FROM_PATIENT = "from";
@@ -186,8 +186,6 @@ export default function TranslateScreen({ encounterId }) {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Medical Translator</Text>
-
       <Segmented
         options={[
           { key: TO_PATIENT, label: "Speak to patient" },
@@ -238,21 +236,19 @@ export default function TranslateScreen({ encounterId }) {
               idleLabel="Dictate"
               disabled={busy}
             />
-            <Pressable
-              style={[styles.primary, (!text.trim() || busy || capture.isBusy) && styles.disabled]}
-              disabled={!text.trim() || busy || capture.isBusy}
+            <Button
+              title={target?.can_speak ? "Translate & speak" : "Translate"}
+              style={styles.grow}
+              loading={busy}
+              disabled={!text.trim() || capture.isBusy}
               onPress={() => submit(text, "en", TO_PATIENT)}
-            >
-              <Text style={styles.primaryText}>
-                {target?.can_speak ? "Translate & speak" : "Translate"}
-              </Text>
-            </Pressable>
+            />
           </View>
 
           {target && !target.can_speak && (
-            <Text style={styles.note}>
+            <Banner tone="warn">
               Amazon Polly has no {target.label} voice — show the patient the screen.
-            </Text>
+            </Banner>
           )}
         </>
       ) : (
@@ -290,7 +286,7 @@ export default function TranslateScreen({ encounterId }) {
       )}
 
       {busy && <ActivityIndicator style={{ marginTop: space.lg }} />}
-      {error && <ErrorText>{error}</ErrorText>}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       {turns.length > 0 && (
         <View style={styles.log}>
@@ -315,10 +311,13 @@ function MicButton({ listening, connecting, onPress, idleLabel, big, disabled })
     <Pressable
       onPress={onPress}
       disabled={off}
-      style={[
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!off, busy: !!listening }}
+      style={({ pressed }) => [
         styles.mic,
         big && styles.micBig,
         listening && styles.micLive,
+        pressed && !listening && styles.micPressed,
         off && !connecting && styles.disabled,
       ]}
     >
@@ -368,9 +367,8 @@ function Turn({ turn, onReplay }) {
 
 const styles = StyleSheet.create({
   container: { padding: space.lg, paddingBottom: space.xl * 2, gap: space.md },
-  title: { fontSize: 22, fontWeight: "700", color: colors.text },
-  hint: { color: colors.muted },
-  note: { color: colors.warn, fontSize: 13 },
+  hint: { ...type.small },
+  grow: { flex: 1 },
   langWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   input: {
     borderWidth: 1,
@@ -378,63 +376,68 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: space.md,
-    minHeight: 88,
+    minHeight: 96,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 17,
+    lineHeight: 24,
     textAlignVertical: "top",
+    ...shadow.card,
   },
-  actions: { flexDirection: "row", gap: space.sm, alignItems: "center" },
+  actions: { flexDirection: "row", gap: space.sm, alignItems: "stretch" },
   mic: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.accent,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
+    minHeight: 50,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
     alignItems: "center",
+    justifyContent: "center",
   },
-  micBig: { paddingVertical: space.xl },
+  micBig: { paddingVertical: space.xxl, borderRadius: radius.lg, ...shadow.card },
   micLive: { backgroundColor: colors.dangerSoft, borderColor: colors.danger },
-  micText: { color: colors.accent, fontWeight: "600" },
+  micPressed: { backgroundColor: colors.accentSoft },
+  micText: { color: colors.accent, fontWeight: "700", fontSize: 15 },
   micTextLive: { color: colors.danger },
-  primary: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: space.md,
-    alignItems: "center",
-  },
-  primaryText: { color: "#fff", fontWeight: "700" },
   disabled: { opacity: 0.4 },
+
   liveBox: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
+    borderColor: colors.accent,
+    padding: space.lg,
     gap: space.xs,
+    ...shadow.card,
   },
-  liveLabel: { color: colors.accent, fontWeight: "600", fontSize: 13 },
-  liveText: { color: colors.text, fontSize: 16 },
+  liveLabel: { ...type.label, color: colors.accent },
+  liveText: { color: colors.text, fontSize: 17, lineHeight: 24 },
+
   log: { gap: space.sm, marginTop: space.lg },
-  logTitle: { fontWeight: "700", color: colors.text, fontSize: 16 },
+  logTitle: { ...type.label },
   turn: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     borderLeftColor: colors.accent,
-    padding: space.md,
+    padding: space.lg,
     gap: space.xs,
+    ...shadow.card,
   },
-  turnPatient: { borderLeftColor: colors.ok },
+  // Patient turns are marked in `info`, not in the brand green: the two
+  // speakers have to be told apart at a glance, and in a green app a
+  // second green is not a distinction.
+  turnPatient: { borderLeftColor: colors.info },
   turnHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  turnWho: { fontSize: 12, fontWeight: "700", color: colors.muted, textTransform: "uppercase" },
-  turnLang: { fontSize: 12, color: colors.ok, fontWeight: "600" },
+  turnWho: { ...type.label },
+  turnLang: { fontSize: 12, color: colors.info, fontWeight: "700" },
   turnLangWeak: { color: colors.warn },
-  turnMain: { fontSize: 19, color: colors.text },
-  turnOriginal: { fontSize: 14, color: colors.faint },
-  turnAlt: { fontSize: 12, color: colors.warn },
+  turnMain: { fontSize: 19, lineHeight: 26, color: colors.text },
+  turnOriginal: { fontSize: 14, color: colors.faint, lineHeight: 20 },
+  turnAlt: { fontSize: 12, color: colors.warn, lineHeight: 18 },
   replay: { alignSelf: "flex-start", paddingVertical: space.xs },
-  replayText: { color: colors.accent, fontWeight: "600" },
+  replayText: { color: colors.accent, fontWeight: "700", fontSize: 13 },
 });

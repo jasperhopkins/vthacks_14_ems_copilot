@@ -11,10 +11,11 @@
 // drugs, interventions, allergies and any interaction flags.
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, RefreshControl,
+  View, Text, Pressable, FlatList, StyleSheet, RefreshControl, ActivityIndicator,
 } from "react-native";
 import { api } from "../api/client";
-import { colors, formatTimestamp, radius, space } from "../theme";
+import { Busy, Empty, ErrorText, Pill, SearchField } from "../components/ui";
+import { colors, formatTimestamp, radius, shadow, space } from "../theme";
 
 const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -29,17 +30,13 @@ const RANGES = [
   { key: "30d", label: "30 days", days: 30 },
 ];
 
-function Pill({ label, active, onPress }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.pill, active && styles.pillActive]}>
-      <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function RecordCard({ record, onPress }) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+    >
       <View style={styles.cardTop}>
         <Text style={styles.complaint} numberOfLines={1}>{record.chief_complaint}</Text>
         {record.flag_count > 0 && (
@@ -129,15 +126,10 @@ export default function SavedPcrsScreen({ navigation }) {
   return (
     <View style={styles.screen}>
       <View style={styles.controls}>
-        <TextInput
-          style={styles.search}
+        <SearchField
           value={query}
           onChangeText={setQuery}
           placeholder="Search complaint, drugs, narrative…"
-          placeholderTextColor={colors.faint}
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
         />
         <View style={styles.pills}>
           <Pill label="⚠ Flagged" active={flaggedOnly} onPress={() => setFlaggedOnly((f) => !f)} />
@@ -148,7 +140,7 @@ export default function SavedPcrsScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" />
+        <Busy label="Loading your reports…" />
       ) : (
         <FlatList
           data={records}
@@ -168,13 +160,13 @@ export default function SavedPcrsScreen({ navigation }) {
           )}
           ListEmptyComponent={
             error ? (
-              <Text style={styles.error}>{error}</Text>
+              <ErrorText>{error}</ErrorText>
             ) : (
-              <Text style={styles.empty}>
+              <Empty>
                 {filtered
                   ? "No saved PCRs match those filters."
                   : "No saved PCRs yet. Record an encounter and file it to see it here."}
-              </Text>
+              </Empty>
             )
           }
           ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.spinner} /> : null}
@@ -188,44 +180,26 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
   controls: {
-    padding: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
     gap: space.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  search: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.bg,
-  },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: space.xs },
-  pill: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs + 2,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  pillText: { fontSize: 13, color: colors.muted, fontWeight: "600" },
-  pillTextActive: { color: "#fff" },
 
-  list: { padding: space.md, gap: space.sm },
+  list: { padding: space.lg, gap: space.sm, paddingBottom: space.xl },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.xs,
+    ...shadow.card,
   },
+  cardPressed: { backgroundColor: colors.bgDeep, borderColor: colors.borderStrong },
   cardTop: { flexDirection: "row", alignItems: "center", gap: space.sm },
   complaint: { fontSize: 16, fontWeight: "700", color: colors.text, flex: 1 },
   flagBadge: {
@@ -234,24 +208,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 12,
     paddingHorizontal: space.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
     overflow: "hidden",
   },
   meta: { color: colors.muted, fontSize: 13 },
   medRow: { flexDirection: "row", flexWrap: "wrap", gap: space.xs, marginTop: space.xs },
   medChip: {
     fontSize: 12,
+    fontWeight: "600",
     color: colors.accent,
     backgroundColor: colors.accentSoft,
     paddingHorizontal: space.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: radius.sm,
     overflow: "hidden",
   },
-  medMore: { fontSize: 12, color: colors.faint, paddingVertical: 2 },
+  medMore: { fontSize: 12, color: colors.faint, paddingVertical: 3 },
 
   spinner: { marginTop: space.xl },
-  empty: { color: colors.muted, textAlign: "center", marginTop: space.xl, paddingHorizontal: space.xl, lineHeight: 20 },
-  error: { color: colors.danger, textAlign: "center", marginTop: space.xl, paddingHorizontal: space.xl },
 });

@@ -7,13 +7,12 @@
 // the screen -- Ask goes through Bedrock, Browse is a plain list.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View, Text, SectionList, Pressable, ScrollView, StyleSheet,
-  ActivityIndicator, RefreshControl,
+  View, Text, SectionList, Pressable, ScrollView, StyleSheet, RefreshControl,
 } from "react-native";
 import { api } from "../api/client";
-import { colors, radius, space } from "../theme";
+import { colors, radius, shadow, space, type } from "../theme";
 import {
-  Pill, Segmented, SearchField, Empty, ErrorText, Section,
+  Pill, Segmented, SearchField, Empty, ErrorText, ErrorBox, Section, Button, Busy, Field,
 } from "../components/ui";
 
 const MODES = [
@@ -23,7 +22,11 @@ const MODES = [
 
 function ProtocolCard({ item, onPress }) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+    >
       <Text style={styles.cardTitle}>{item.title}</Text>
       {!!item.summary && (
         <Text style={styles.cardSummary} numberOfLines={2}>{item.summary}</Text>
@@ -85,7 +88,7 @@ function BrowseTab({ navigation }) {
 
   const total = sections.reduce((n, s) => n + s.data.length, 0);
 
-  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (loading) return <Busy label="Loading the guideline library…" />;
 
   return (
     <View style={styles.flex}>
@@ -165,29 +168,33 @@ function AskTab({ encounterId, navigation }) {
         Answers come only from the protocol database — never invented. If nothing
         matches, it says so rather than guessing.
       </Text>
-      <SearchField
-        value={query}
-        onChangeText={setQuery}
-        placeholder="e.g. unresponsive, pinpoint pupils"
-        onSubmitEditing={submit}
-        returnKeyType="search"
-      />
-      <SearchField
-        value={weight}
-        onChangeText={setWeight}
-        placeholder="Patient weight (kg, optional)"
-        keyboardType="numeric"
-      />
-      <Pressable
-        style={[styles.button, (!query || loading) && styles.buttonDisabled]}
+      <Field label="Presentation">
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="e.g. unresponsive, pinpoint pupils"
+          onSubmitEditing={submit}
+          returnKeyType="search"
+        />
+      </Field>
+      <Field label="Patient weight" hint="Optional — used for weight-based dosing.">
+        <SearchField
+          value={weight}
+          onChangeText={setWeight}
+          placeholder="kg"
+          keyboardType="numeric"
+        />
+      </Field>
+      <Button
+        title={loading ? "Searching…" : "Ask"}
         onPress={submit}
-        disabled={!query || loading}
-      >
-        <Text style={styles.buttonText}>{loading ? "Searching…" : "Ask"}</Text>
-      </Pressable>
+        loading={loading}
+        disabled={!query}
+        style={{ marginTop: space.xs }}
+      />
 
-      {loading && <ActivityIndicator style={{ marginTop: space.lg }} />}
-      {error && <ErrorText>{error}</ErrorText>}
+      {loading && <Busy label="Matching against 71 guidelines…" />}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       {answer && (
         <View style={{ gap: space.lg, marginTop: space.lg }}>
@@ -202,7 +209,8 @@ function AskTab({ encounterId, navigation }) {
             {(answer.matches || []).map((m) => (
               <Pressable
                 key={m.protocol_id}
-                style={styles.card}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                 onPress={() => navigation.navigate("ProtocolDetail", {
                   protocolId: m.protocol_id, title: m.title,
                 })}
@@ -257,50 +265,47 @@ export default function ProtocolScreen({ encounterId, navigation }) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   modeBar: {
-    padding: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   controls: {
-    padding: space.md, gap: space.sm,
+    paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  pillRow: { gap: space.xs, paddingRight: space.md },
+  pillRow: { gap: space.xs, paddingRight: space.lg },
 
-  list: { padding: space.md, paddingBottom: space.xl, gap: space.sm },
+  list: { padding: space.lg, paddingBottom: space.xl },
   sectionHeader: {
-    fontSize: 12, fontWeight: "700", color: colors.muted,
-    textTransform: "uppercase", letterSpacing: 0.6,
-    backgroundColor: colors.bg, paddingVertical: space.sm,
+    ...type.label,
+    backgroundColor: colors.bg,
+    paddingVertical: space.sm,
+    marginTop: space.xs,
   },
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border,
     padding: space.lg, gap: space.xs, marginBottom: space.sm,
+    ...shadow.card,
   },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  cardPressed: { backgroundColor: colors.bgDeep, borderColor: colors.borderStrong },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: colors.text, lineHeight: 21 },
   cardSummary: { fontSize: 13, color: colors.muted, lineHeight: 19 },
   cardMeta: { fontSize: 12, color: colors.faint },
   footer: { textAlign: "center", color: colors.faint, fontSize: 12, paddingVertical: space.lg },
 
-  askBody: { padding: space.md, gap: space.sm },
-  hint: { color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: space.xs },
-  button: {
-    backgroundColor: colors.accent, borderRadius: radius.sm,
-    paddingVertical: space.md, alignItems: "center",
-  },
-  buttonDisabled: { backgroundColor: colors.faint },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  answer: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  askBody: { padding: space.lg, gap: space.md, paddingBottom: space.xl * 2 },
+  hint: { ...type.small },
+  answer: { color: colors.text, fontSize: 16, lineHeight: 24 },
   citation: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: space.xs },
   matchedOn: { color: colors.faint, fontSize: 11, fontStyle: "italic" },
-  openHint: { color: colors.accent, fontSize: 12, fontWeight: "600", marginTop: space.xs },
+  openHint: { color: colors.accent, fontSize: 12, fontWeight: "700", marginTop: space.xs },
   disclaimer: {
     color: colors.muted, fontSize: 11, lineHeight: 17,
     borderTopWidth: 1, borderTopColor: colors.border, paddingTop: space.md,
   },
 
-  spinner: { marginTop: space.xl },
 });

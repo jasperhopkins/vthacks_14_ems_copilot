@@ -10,11 +10,12 @@
 // it would silence the assistant for the rest of the call.
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, TextInput, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert,
+  View, Text, TextInput, ScrollView, StyleSheet, Alert,
 } from "react-native";
 import { api } from "../api/client";
 import PcrDocument from "../components/PcrDocument";
-import { colors, radius, space } from "../theme";
+import { Banner, Busy, Button, ErrorBox } from "../components/ui";
+import { colors, radius, shadow, space, type } from "../theme";
 
 // How long to wait for an extraction worker to produce a record before
 // calling it absent rather than slow.
@@ -113,12 +114,11 @@ export default function PcrReviewScreen({ route, navigation }) {
   if (phase === "loading" || phase === "writing") {
     return (
       <View style={[styles.screen, styles.center]}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.hint}>
-          {phase === "writing"
+        <Busy
+          label={phase === "writing"
             ? "Copilot is still writing this one up. It'll open here as soon as it's ready."
             : "Loading the draft…"}
-        </Text>
+        />
       </View>
     );
   }
@@ -126,10 +126,8 @@ export default function PcrReviewScreen({ route, navigation }) {
   if (phase === "error") {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.error}>{error}</Text>
-        <Pressable style={[styles.button, styles.secondary]} onPress={load}>
-          <Text style={styles.secondaryText}>Try again</Text>
-        </Pressable>
+        <ErrorBox>{error}</ErrorBox>
+        <Button title="Try again" variant="secondary" onPress={load} />
       </View>
     );
   }
@@ -137,32 +135,30 @@ export default function PcrReviewScreen({ route, navigation }) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {phase === "review" && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>Review before filing</Text>
-          <Text style={styles.bannerBody}>
-            Copilot drafted this from the call. Every field is editable, and correcting a
-            medication re-runs the interaction check when you save. Copilot is still
-            listening behind this screen.
-          </Text>
-        </View>
+        <Banner title="Review before filing">
+          Copilot drafted this from the call. Every field is editable, and correcting a
+          medication re-runs the interaction check when you save. Copilot is still
+          listening behind this screen.
+        </Banner>
       )}
 
       {phase === "saved" && (
         <View style={styles.card}>
-          <Text style={styles.savedTitle}>✓ Filed to your PCRs</Text>
-          <Text style={styles.hint}>Encounter {encounterId}</Text>
-          <Pressable style={[styles.button, styles.secondary]} onPress={() => navigation.goBack()}>
-            <Text style={styles.secondaryText}>Back to Copilot</Text>
-          </Pressable>
+          <View style={styles.savedRow}>
+            <View style={styles.savedTick}><Text style={styles.savedTickMark}>✓</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.savedTitle}>Filed to your PCRs</Text>
+              <Text style={styles.savedMeta} numberOfLines={1}>{encounterId}</Text>
+            </View>
+          </View>
+          <Button title="Back to Copilot" onPress={() => navigation.goBack()} />
           {/* Re-filing overwrites in place; the audit trail, not the
               encounters table, is what preserves who changed what. */}
-          <Pressable style={[styles.button, styles.secondary]} onPress={() => setPhase("review")}>
-            <Text style={styles.secondaryText}>Edit and re-file</Text>
-          </Pressable>
+          <Button title="Edit and re-file" variant="secondary" onPress={() => setPhase("review")} />
         </View>
       )}
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       <PcrDocument pcr={draft} flags={flags} editable={phase === "review"} onChange={setDraft} />
 
@@ -179,16 +175,12 @@ export default function PcrReviewScreen({ route, navigation }) {
         />
       </View>
 
-      {phase === "saving" && <ActivityIndicator size="large" />}
+      {phase === "saving" && <Busy label="Filing the report…" />}
 
       {phase === "review" && (
         <View style={styles.actions}>
-          <Pressable style={[styles.button, styles.primary]} onPress={commit}>
-            <Text style={styles.primaryText}>Save to my PCRs</Text>
-          </Pressable>
-          <Pressable style={[styles.button, styles.secondary]} onPress={discard}>
-            <Text style={styles.secondaryText}>Not now</Text>
-          </Pressable>
+          <Button title="Save to my PCRs" onPress={commit} />
+          <Button title="Not now" variant="secondary" onPress={discard} />
         </View>
       )}
     </ScrollView>
@@ -198,36 +190,39 @@ export default function PcrReviewScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xl * 2 },
-  center: { alignItems: "center", justifyContent: "center", gap: space.md, padding: space.xl },
+  center: { alignItems: "center", justifyContent: "center", gap: space.lg, padding: space.xl },
 
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1,
-    borderColor: colors.border, padding: space.lg, gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+    gap: space.md,
+    ...shadow.card,
   },
-  hint: { color: colors.muted, lineHeight: 20 },
-  sectionTitle: {
-    fontSize: 11, fontWeight: "700", letterSpacing: 0.8,
-    color: colors.muted, textTransform: "uppercase",
+  sectionTitle: { ...type.label },
+
+  savedRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  savedTick: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.okSoft, alignItems: "center", justifyContent: "center",
   },
-
-  banner: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: space.lg, gap: space.xs },
-  bannerTitle: { fontWeight: "700", color: colors.accent },
-  bannerBody: { color: colors.text, fontSize: 13, lineHeight: 19 },
-
-  button: { paddingVertical: space.md, borderRadius: radius.sm, alignItems: "center" },
-  primary: { backgroundColor: colors.accent },
-  primaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  secondary: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  secondaryText: { color: colors.text, fontWeight: "600", fontSize: 15 },
+  savedTickMark: { color: colors.ok, fontSize: 18, fontWeight: "800" },
+  savedTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+  savedMeta: { fontSize: 12, color: colors.faint, marginTop: 1 },
 
   notes: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm,
-    padding: space.sm, minHeight: 72, textAlignVertical: "top", color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: space.md,
+    minHeight: 84,
+    textAlignVertical: "top",
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 21,
   },
   actions: { gap: space.sm },
-  savedTitle: { fontSize: 18, fontWeight: "700", color: colors.ok },
-  error: {
-    color: colors.danger, backgroundColor: colors.dangerSoft,
-    padding: space.md, borderRadius: radius.sm,
-  },
 });

@@ -9,10 +9,10 @@
 // says so; anyone reading a dose off this screen needs to be able to find
 // the same line in the source document.
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { api } from "../api/client";
-import { colors, radius, space } from "../theme";
-import { Section, NumberedList, BulletList, Chips, ErrorText } from "../components/ui";
+import { colors, radius, shadow, space } from "../theme";
+import { Busy, Section, NumberedList, BulletList, Chips, ErrorText } from "../components/ui";
 
 export default function ProtocolDetailScreen({ route }) {
   const { protocolId } = route.params || {};
@@ -35,7 +35,7 @@ export default function ProtocolDetailScreen({ route }) {
     return () => { active = false; };
   }, [protocolId]);
 
-  if (loading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (loading) return <Busy label="Loading the guideline…" />;
   if (error) return <ErrorText>{error}</ErrorText>;
   if (!protocol) return <ErrorText>Protocol not found.</ErrorText>;
 
@@ -95,17 +95,18 @@ export default function ProtocolDetailScreen({ route }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  body: { padding: space.md, gap: space.xl, paddingBottom: space.xl * 2 },
+  body: { padding: space.lg, gap: space.xl, paddingBottom: space.xl * 2 },
   header: { gap: space.xs },
-  title: { fontSize: 20, fontWeight: "700", color: colors.text, lineHeight: 27 },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text, lineHeight: 29, letterSpacing: -0.3 },
   meta: { color: colors.muted, fontSize: 13 },
   prose: { color: colors.text, fontSize: 14, lineHeight: 21 },
   stepBox: {
-    backgroundColor: colors.surface, borderRadius: radius.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: space.lg,
+    ...shadow.card,
   },
   safetyBox: {
-    backgroundColor: colors.warnSoft, borderRadius: radius.md,
+    backgroundColor: colors.warnSoft, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.warn, padding: space.lg,
   },
   citation: {
@@ -114,5 +115,4 @@ const styles = StyleSheet.create({
   },
   citationText: { color: colors.faint, fontSize: 11, lineHeight: 16 },
   citationId: { color: colors.faint, fontSize: 11, fontWeight: "700" },
-  spinner: { marginTop: space.xl },
 });

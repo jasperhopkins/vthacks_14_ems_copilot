@@ -8,7 +8,7 @@
 // common/pcr.py.
 import React from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
-import { colors, radius, space, severityStyle } from "../theme";
+import { colors, radius, shadow, space, type, severityStyle } from "../theme";
 
 const VITALS = [
   ["bp", "BP"],
@@ -330,11 +330,12 @@ const styles = StyleSheet.create({
 
   header: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.sm,
+    ...shadow.card,
   },
   complaint: { fontSize: 20, fontWeight: "700", color: colors.text },
   complaintInput: {
@@ -359,21 +360,16 @@ const styles = StyleSheet.create({
 
   section: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.sm,
+    ...shadow.card,
   },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: colors.muted,
-    textTransform: "uppercase",
-  },
-  addButton: { color: colors.accent, fontWeight: "600", fontSize: 13 },
+  sectionTitle: { ...type.label },
+  addButton: { color: colors.accent, fontWeight: "700", fontSize: 13 },
 
   readField: { gap: space.xs },
   label: { fontSize: 12, color: colors.muted },
@@ -384,11 +380,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm + 1,
     fontSize: 15,
     color: colors.text,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
   },
   inputMultiline: { minHeight: 96, textAlignVertical: "top" },
 
@@ -405,14 +401,14 @@ const styles = StyleSheet.create({
     minWidth: 78,
     flexGrow: 1,
     flexBasis: "22%",
-    backgroundColor: colors.bg,
-    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.md,
     paddingVertical: space.sm,
     paddingHorizontal: space.sm,
     gap: 2,
   },
-  vitalLabel: { fontSize: 11, color: colors.muted, fontWeight: "600" },
-  vitalValue: { fontSize: 16, color: colors.text, fontWeight: "600" },
+  vitalLabel: { fontSize: 10, color: colors.accent, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
+  vitalValue: { fontSize: 17, color: colors.text, fontWeight: "700" },
   vitalInput: {
     fontSize: 16,
     color: colors.text,
@@ -443,16 +439,17 @@ const styles = StyleSheet.create({
 
   flagBlock: { gap: space.sm },
   flagHeading: { fontWeight: "700", color: colors.danger, fontSize: 15 },
-  flagCard: { borderLeftWidth: 4, borderRadius: radius.sm, padding: space.md, gap: space.xs },
+  flagCard: { borderLeftWidth: 4, borderRadius: radius.md, padding: space.md, gap: space.xs },
   flagTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: space.sm },
   flagDrugs: { fontWeight: "700", color: colors.text, flexShrink: 1 },
   severityPill: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.5,
     borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.xs,
-    paddingVertical: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
     overflow: "hidden",
   },
   flagNote: { color: colors.text, fontSize: 13, lineHeight: 18 },

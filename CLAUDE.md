@@ -125,6 +125,7 @@ python3 infra/tests/test_drug_sources.py    # FDA label mining + formulary parsi
 python3 infra/tests/test_languages.py       # translator language table consistency
 python3 infra/tests/test_agent_policy.py    # the agent action boundary -- run before touching src/agent/
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
+node mobile/tools/test_imports.mjs          # a name used from theme/ui/Logo but never imported
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
 # it goes through Cognito SRP -> API Gateway -> Transcribe -> Bedrock ->
@@ -272,9 +273,12 @@ Expo app (Cognito-authenticated)
 | `infra/seed/*.json` | Demo drug/protocol data — **not clinically authoritative, labeled as such in the files**; includes alias rows for field slang |
 | `infra/tests/smoke_test_pcr.py` | End-to-end pipeline test against a live stack (Polly-generated audio, real SRP login) |
 | `infra/tests/eval_models.py` | Model-selection harness; re-run before changing `BedrockModelId` |
-| `mobile/App.js` | Navigation shell + login |
+| `mobile/App.js` | Navigation shell, branded sign-in and home menu, nav theming |
 | `mobile/src/screens/*.js` | The feature screens, incl. the browse + detail pairs |
-| `mobile/src/components/ui.js` | Shared browse controls (pills, segmented, cards, lists) |
+| `mobile/src/components/ui.js` | Shared controls — `Button`, `Card`, `Banner`, `Busy`, `Field`, pills, segmented, lists |
+| `mobile/src/theme.js` | The palette, spacing, radii, shadows and type scale — every screen imports from here |
+| `mobile/src/components/Logo.js` | The vector mark, the wordmark lockup, and the menu glyph set |
+| `mobile/assets/*.png` | Launcher/splash icons, **generated** from the mark — see the script note in `Logo.js` |
 | `mobile/src/config.js` | **Fill this in from `sam deploy` outputs before running the app** |
 | `docs/HIPAA_NOTES.md` | Compliance posture, what's real vs. aspirational, service-by-service eligibility notes (items 10–11 cover the agent) |
 | `infra/README.md` | Full deploy walkthrough |
@@ -755,6 +759,52 @@ endpoint is a four-file change:
   thread; this returns in ~350ms. Don't "fix" this by reinstating
   `amazon-cognito-identity-js` without a native crypto module — and that
   module rules out Expo Go. Tradeoff recorded in `docs/HIPAA_NOTES.md`.
+- **A missing import is not a build error, so there is a test for it.**
+  Metro bundles a file that references an undefined name perfectly
+  happily; it throws a `ReferenceError` at render, on whichever screen
+  touches that line. A regex that rewrote the `../theme` import across
+  several files once dropped `formatTimestamp` from `PcrDetailScreen`,
+  and opening any filed PCR threw — both bundles built clean and an
+  unused-import audit passed, because the damage was in the other
+  direction. `node mobile/tools/test_imports.mjs` checks the names our
+  own modules export; run it after touching imports in bulk.
+- **Nothing stops `/pcr/finalize` re-drafting an already-committed
+  record, and the result is a filed PCR whose body postdates its own
+  filing.** Neither `finalize.py`'s handler nor `_run_extraction` guards
+  on the current status: both write `EXTRACTING` and then `DRAFT`
+  unconditionally, while `saved_at` and `committed_by` survive untouched.
+  Because `ByUserSaved` is sparse on `saved_at`, the record therefore
+  *stays in the filed list*, still labelled with the old commit time,
+  carrying content a human never approved. One row in `dev` had this
+  (`demo-1789857389563-2`: `saved_at` 22:41:05, `drafted_at` 22:43:48,
+  status back to `DRAFT`); it was deleted 2026-09-20. It is reachable
+  whenever an encounter id is reused, which the retired attempt-counter
+  scheme did by design. **Still unfixed** — the fix is a
+  `ConditionExpression` refusing to re-extract a `SAVED` record, or
+  clearing `saved_at` when one is deliberately re-opened. Decide which
+  before adding a "re-record this encounter" path.
+- **The palette is green on white, and that makes `ok` and `accent` the
+  same colour.** `theme.js` is the single source; screens import tokens
+  from it and hardcode nothing but `#fff`-on-accent. The consequence to
+  watch for: anywhere two live states sit side by side and must be told
+  apart, the second one uses **`info`** (a teal), not a second green —
+  patient vs medic in the translator's conversation log, and
+  speaking vs listening on the hands-free status dot. A green success
+  state next to a green brand accent carries no information. Every
+  semantic token clears 4.5:1 on white in both directions.
+- **The logo is vector, and the PNGs are build outputs.** `Logo.js` holds
+  the mark (`LogoMark`), the lockup (`Wordmark`) and the six menu glyphs;
+  it is drawn with `react-native-svg`, which works in Expo Go. The
+  launcher and splash images in `mobile/assets/` were rasterised from the
+  same path data — change the mark and they have to be regenerated, or
+  the icon and the in-app logo drift apart.
+- **The green header band is sized by its content, not by a number.**
+  `HeaderWave` in `App.js` fills its parent (`width`/`height` at 100% with
+  `preserveAspectRatio="none"`) and the parent wraps the brand block plus
+  a `SafeAreaView` inset. It was originally absolutely positioned at a
+  fixed pixel height, which is how you end up with a white wordmark on a
+  white background on whichever device has the safe-area inset you didn't
+  test on.
 - **Mobile is on Expo SDK 57, which matters for audio.** `expo-av` was
   removed after SDK 54; recording and playback use `expo-audio`
   (`useAudioRecorder` + `RecordingPresets.HIGH_QUALITY`, `createAudioPlayer`).
