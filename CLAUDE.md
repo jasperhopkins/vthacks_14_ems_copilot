@@ -92,6 +92,7 @@ pipeline and protocol retrieval scoring; everything else is verified by
 ```bash
 python3 infra/tests/test_pcr_logic.py       # unit-ish, no AWS creds needed
 python3 infra/tests/test_protocol_search.py # protocol ranking + seed data
+python3 infra/tests/test_drug_classes.py    # class-level interactions + RxClass parsing
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
@@ -116,6 +117,10 @@ sam delete --stack-name ems-copilot-dev         # empty the S3 buckets first if 
 
 # Seed the reference tables (after deploy, once per environment)
 python3 infra/seed/seed_tables.py --stage dev --region us-east-1
+
+# Refresh drug classes from NLM RxClass into the seed file (no AWS calls,
+# writes only drug_reference_seed.json -- review the diff, then re-seed)
+python3 infra/seed/seed_tables.py --refresh-classes
 
 # Mobile -- run from mobile/
 npm install
@@ -188,6 +193,7 @@ Expo app (Cognito-authenticated)
 | `infra/src/pcr/status.py` | PCR poll target: Bedrock extraction + drug cross-check |
 | `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
+| `infra/seed/rxclass.py` | NLM RxClass client — seed-time only, never called from a Lambda |
 | `infra/seed/*.json` | Demo drug/protocol data — **not clinically authoritative, labeled as such in the files**; includes alias rows for field slang |
 | `infra/tests/smoke_test_pcr.py` | End-to-end pipeline test against a live stack (Polly-generated audio, real SRP login) |
 | `infra/tests/eval_models.py` | Model-selection harness; re-run before changing `BedrockModelId` |
@@ -284,9 +290,32 @@ endpoint is a four-file change:
   the list. The GSI projects the flat `summary_*` / `search_text` /
   `flag_count` attributes from `build_summary_attrs`; a new list-card
   field has to be added there *and* to `NonKeyAttributes`.
-- Interaction checks read `contraindicated_with` off **both** drugs in a
-  pair and emit at most one flag per pair, so seed data recording the
-  contraindication on only one side still fires.
+- **Interaction checks run two rule layers, and the merge direction is a
+  safety property.** Layer 1 is curated pairs (`contraindicated_with` +
+  `interaction_notes`) — hand-written and clinically phrased. Layer 2 is
+  drug classes (`classes` + `contraindicated_classes`, MoA/EPC ids from
+  RxClass), so one rule covers a whole class: vardenafil and avanafil flag
+  against nitrates with nobody adding them to a list. **Layer 2 only ever
+  adds flags.** RxClass has no contraindication relation between
+  epinephrine and propranolol, so the unopposed-alpha cross-check — the
+  demo moment — lives only in layer 1; letting classes replace curated
+  rules would delete it silently. A curated rule wins the flag when both
+  match, and flags carry `basis` (`curated_pair` / `drug_class`) plus the
+  source in the note, because the two are different levels of authority.
+  Both layers read **both** drugs in a pair and emit at most one flag per
+  pair, so data recording the contraindication on only one side still
+  fires — RxClass records nitrate/PDE5 on nitroglycerin's side only.
+- **`--refresh-classes` writes the seed file, not DynamoDB, and never
+  touches `contraindicated_with`.** Class data is reviewed in a diff before
+  it reaches a medic, and no Lambda makes an outbound call — RxClass is a
+  terminology service, not a clinical interaction database, and it should
+  not be silently authoritative in a field tool. Two traps if you touch
+  `seed/rxclass.py`: `byRxcui` **ignores the `rela` query parameter** and
+  returns contraindication relations mixed in with membership ones (filter
+  client-side on each row's `rela`, or nitroglycerin comes back as a member
+  of the PDE5 class it's merely contraindicated with, and matches itself);
+  and **ATC is the wrong vocabulary** — its `G04BE` lumps alprostadil in
+  with the PDE5 inhibitors, so only MoA and EPC are kept.
 - Both Bedrock callers use the **Converse API** at `temperature: 0`, not
   `invoke_model` — Converse is provider-agnostic, so `BedrockModelId` can
   point at Nova, Llama, Mistral, GPT-OSS, etc. without touching code.

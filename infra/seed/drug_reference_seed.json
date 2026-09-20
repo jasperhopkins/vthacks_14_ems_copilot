@@ -17,7 +17,45 @@
       "propranolol": "Non-selective beta-blockade can cause unopposed alpha-adrenergic effects -- severe hypertension possible. Use with caution, consider glucagon as alternative if patient is on beta-blockers.",
       "phenelzine": "MAOIs can potentiate pressor effects significantly -- risk of hypertensive crisis."
     },
-    "notes": "This is a SEED/DEMO dataset for hackathon use only -- not medical-grade and not a substitute for your agency's actual protocols."
+    "notes": "This is a SEED/DEMO dataset for hackathon use only -- not medical-grade and not a substitute for your agency's actual protocols.",
+    "classes": [
+      {
+        "class_id": "N0000000209",
+        "class_name": "Adrenergic alpha-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000000245",
+        "class_name": "Adrenergic beta-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009921",
+        "class_name": "Adrenergic beta1-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009922",
+        "class_name": "Adrenergic beta2-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175552",
+        "class_name": "alpha-Adrenergic Agonist",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175555",
+        "class_name": "beta-Adrenergic Agonist",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175570",
+        "class_name": "Catecholamine",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "propranolol",
@@ -35,7 +73,30 @@
     "interaction_notes": {
       "epinephrine": "See epinephrine entry -- unopposed alpha effects risk."
     },
-    "notes": "SEED/DEMO dataset only."
+    "notes": "SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000000161",
+        "class_name": "Adrenergic beta-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009923",
+        "class_name": "Adrenergic beta1-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000009924",
+        "class_name": "Adrenergic beta2-Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175556",
+        "class_name": "beta-Adrenergic Blocker",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "naloxone",
@@ -47,7 +108,20 @@
     "pediatric_dose": "0.1 mg/kg IV/IM/IN, max 2 mg per dose.",
     "contraindicated_with": [],
     "interaction_notes": {},
-    "notes": "Can precipitate acute withdrawal in opioid-dependent patients -- titrate to adequate respiration, not full consciousness. SEED/DEMO dataset only."
+    "notes": "Can precipitate acute withdrawal in opioid-dependent patients -- titrate to adequate respiration, not full consciousness. SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000000154",
+        "class_name": "Opioid Antagonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175691",
+        "class_name": "Opioid Antagonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "aspirin",
@@ -65,7 +139,25 @@
       "active gi bleed": "Increased bleeding risk -- withhold and consult medical control.",
       "aspirin allergy": "Do not administer -- risk of anaphylaxis/bronchospasm."
     },
-    "notes": "SEED/DEMO dataset only."
+    "notes": "SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000000160",
+        "class_name": "Cyclooxygenase Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175578",
+        "class_name": "Platelet Aggregation Inhibitor",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000175722",
+        "class_name": "Nonsteroidal Anti-inflammatory Drug",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "albuterol",
@@ -79,7 +171,20 @@
     "pediatric_dose": "2.5 mg nebulized (same as adult for most protocols; confirm local protocol for <2 years).",
     "contraindicated_with": [],
     "interaction_notes": {},
-    "notes": "Can cause tachycardia/tremor -- monitor cardiac patients closely. SEED/DEMO dataset only."
+    "notes": "Can cause tachycardia/tremor -- monitor cardiac patients closely. SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000009922",
+        "class_name": "Adrenergic beta2-Agonists",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175779",
+        "class_name": "beta2-Adrenergic Agonist",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
   },
   {
     "drug_name": "nitroglycerin",
@@ -98,7 +203,31 @@
       "sildenafil": "PDE5 inhibitor within 24h (48h for tadalafil) plus a nitrate can cause profound, refractory hypotension. Ask before giving nitro.",
       "tadalafil": "Same PDE5 mechanism as sildenafil, longer window -- hold nitrates for 48h."
     },
-    "notes": "SEED/DEMO dataset only -- not medical-grade and not a substitute for your agency's actual protocols."
+    "notes": "SEED/DEMO dataset only -- not medical-grade and not a substitute for your agency's actual protocols.",
+    "classes": [
+      {
+        "class_id": "N0000000120",
+        "class_name": "Nitric Oxide Donors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175415",
+        "class_name": "Nitrate Vasodilator",
+        "class_type": "EPC"
+      },
+      {
+        "class_id": "N0000185499",
+        "class_name": "Guanylate Cyclase Activators",
+        "class_type": "MOA"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      }
+    ]
   },
   {
     "drug_name": "sildenafil",
@@ -115,7 +244,109 @@
     "interaction_notes": {
       "nitroglycerin": "See nitroglycerin entry -- refractory hypotension risk."
     },
-    "notes": "SEED/DEMO dataset only."
+    "notes": "SEED/DEMO dataset only.",
+    "classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175599",
+        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "tadalafil",
+    "class": "PDE5 inhibitor",
+    "common_uses": [
+      "Erectile dysfunction",
+      "Pulmonary hypertension",
+      "BPH"
+    ],
+    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates (48h window -- longer than sildenafil).",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "SEED/DEMO dataset only. Deliberately carries NO hand-written `contraindicated_with` entry for nitrates: the nitrate interaction is caught by the class-level rule (PDE5 inhibitor MoA) instead. That is the point of the class rules -- adding a new PDE5 inhibitor is a seed-data change with no interaction list to maintain.",
+    "classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175599",
+        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": []
+  },
+  {
+    "drug_name": "vardenafil",
+    "class": "PDE5 inhibitor",
+    "common_uses": [
+      "Erectile dysfunction"
+    ],
+    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "SEED/DEMO dataset only. Deliberately carries NO hand-written `contraindicated_with` entry for nitrates: the nitrate interaction is caught by the class-level rule (PDE5 inhibitor MoA) instead. That is the point of the class rules -- adding a new PDE5 inhibitor is a seed-data change with no interaction list to maintain.",
+    "classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175599",
+        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000190484",
+        "class_name": "Guanylate Cyclase Stimulators",
+        "class_type": "MOA"
+      }
+    ]
+  },
+  {
+    "drug_name": "avanafil",
+    "class": "PDE5 inhibitor",
+    "common_uses": [
+      "Erectile dysfunction"
+    ],
+    "adult_dose": "Not field-administered by EMS; relevant here as a patient home medication that rules out nitrates.",
+    "pediatric_dose": "N/A for field EMS use.",
+    "contraindicated_with": [],
+    "interaction_notes": {},
+    "notes": "SEED/DEMO dataset only. Deliberately carries NO hand-written `contraindicated_with` entry for nitrates: the nitrate interaction is caught by the class-level rule (PDE5 inhibitor MoA) instead. That is the point of the class rules -- adding a new PDE5 inhibitor is a seed-data change with no interaction list to maintain.",
+    "classes": [
+      {
+        "class_id": "N0000020026",
+        "class_name": "Phosphodiesterase 5 Inhibitors",
+        "class_type": "MOA"
+      },
+      {
+        "class_id": "N0000175599",
+        "class_name": "Phosphodiesterase 5 Inhibitor",
+        "class_type": "EPC"
+      }
+    ],
+    "contraindicated_classes": [
+      {
+        "class_id": "N0000190484",
+        "class_name": "Guanylate Cyclase Stimulators",
+        "class_type": "MOA"
+      }
+    ]
   },
   {
     "drug_name": "epi",
@@ -191,5 +422,30 @@
     "drug_name": "revatio",
     "alias_of": "sildenafil",
     "notes": "Alias row: 'revatio' resolves to 'sildenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "cialis",
+    "alias_of": "tadalafil",
+    "notes": "Alias row: 'cialis' resolves to 'tadalafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "adcirca",
+    "alias_of": "tadalafil",
+    "notes": "Alias row: 'adcirca' resolves to 'tadalafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "levitra",
+    "alias_of": "vardenafil",
+    "notes": "Alias row: 'levitra' resolves to 'vardenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "staxyn",
+    "alias_of": "vardenafil",
+    "notes": "Alias row: 'staxyn' resolves to 'vardenafil'. SEED/DEMO dataset only."
+  },
+  {
+    "drug_name": "stendra",
+    "alias_of": "avanafil",
+    "notes": "Alias row: 'stendra' resolves to 'avanafil'. SEED/DEMO dataset only."
   }
 ]

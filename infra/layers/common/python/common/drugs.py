@@ -11,6 +11,24 @@ need the exact same rules:
 One implementation means an interaction rule can't silently differ between
 "the EMT asked" and "the PCR noticed".
 
+Interactions are checked by two rule layers, and the merge direction
+matters:
+
+  1. **Curated pairs** (`contraindicated_with` + `interaction_notes`) --
+     hand-authored, clinically phrased, agency-reviewable. These win.
+  2. **Drug classes** (`classes` + `contraindicated_classes`) -- MoA/EPC
+     class ids refreshed from NLM RxClass by
+     `seed_tables.py --refresh-classes`. One rule covers a whole class, so
+     vardenafil and avanafil flag against nitrates without anybody adding
+     them to a list.
+
+Layer 2 only ever *adds* flags. It must never be allowed to remove a
+curated rule, because its coverage is patchy in exactly the places that
+matter: RxClass has no contraindication relation at all between
+epinephrine and propranolol, so the unopposed-alpha interaction -- this
+project's headline cross-check -- exists only in layer 1. Swapping the
+curated rules out for class rules would silently delete it.
+
 Name resolution is the hard part, because these names arrive from speech.
 Comprehend Medical's RxNorm linking alone is not enough: it maps "narcan"
 to the concept *narcan* (the brand), not to "naloxone", and returns no
@@ -88,33 +106,98 @@ def get_drug(name: str):
     return resolve_drug(name)[1]
 
 
+def _class_ids(record: dict, key: str) -> dict:
+    """{class_id: class entry} for one side of a record's class data."""
+    return {
+        c["class_id"]: c
+        for c in (record.get(key) or [])
+        if isinstance(c, dict) and c.get("class_id")
+    }
+
+
+def _curated_flag(record: dict, canonical_other: str) -> dict | None:
+    """Layer 1: an explicit, hand-written pair rule."""
+    contraindicated = {c.lower() for c in record.get("contraindicated_with", [])}
+    if canonical_other not in contraindicated:
+        return None
+    return {
+        "severity": record.get("severity", "CONTRAINDICATED"),
+        "note": record.get("interaction_notes", {}).get(
+            canonical_other, "Do not co-administer."
+        ),
+        "basis": "curated_pair",
+    }
+
+
+def _class_flag(record: dict, other_record: dict) -> dict | None:
+    """Layer 2: this drug is contraindicated with a class the other is in.
+
+    Reports the class names so the EMT can see *why* it fired, and names
+    RxClass as the source -- a class-derived flag and an agency-curated one
+    are different levels of authority and should not read identically.
+    """
+    if not other_record:
+        return None
+    shared = set(_class_ids(record, "contraindicated_classes")) & set(
+        _class_ids(other_record, "classes")
+    )
+    if not shared:
+        return None
+    entries = _class_ids(other_record, "classes")
+    names = sorted(entries[cid].get("class_name", cid) for cid in shared)
+    return {
+        "severity": record.get("severity", "CONTRAINDICATED"),
+        "note": (
+            f"Drug-class contraindication: {', '.join(names)}. "
+            "Derived from NLM RxClass (MED-RT) class data, not a curated "
+            "agency rule -- verify against your protocol."
+        ),
+        "basis": "drug_class",
+        "matched_classes": [
+            {"class_id": cid, "class_name": entries[cid].get("class_name", "")}
+            for cid in sorted(shared)
+        ],
+    }
+
+
 def check_interactions(drug_names: list[str]) -> list[dict]:
     """Flag contraindicated pairs among the given drugs.
 
-    Checks each pair in BOTH directions: the seed data happens to list
-    contraindications reciprocally, but real reference data often records
-    the pair only on one of the two drugs, and a one-way check would miss
-    it. Flags report the names the EMT used; matching happens on canonical
-    names.
+    Checks each pair in BOTH directions and through both rule layers. Real
+    reference data routinely records a pair on only one of the two drugs --
+    RxClass, for instance, puts the nitrate/PDE5 contraindication on
+    nitroglycerin's side as an MoA it must not meet, and records nothing on
+    sildenafil's -- so a one-way check would miss it.
+
+    Emits at most one flag per pair, preferring the curated rule: its note
+    is written for a medic, the class-derived one is generated.
     """
     resolved = {name: resolve_drug(name) for name in drug_names}
 
     flags = []
     for a, b in combinations(drug_names, 2):
+        canonical_a = resolved[a][0]
+        canonical_b = resolved[b][0]
+        # The same drug said two ways ("epi" and "epinephrine") is not an
+        # interaction with itself.
+        if canonical_a == canonical_b:
+            continue
+
+        hit = None
         for first, second in ((a, b), (b, a)):
-            _, record = resolved[first]
+            record = resolved[first][1]
             if not record:
                 continue
-            canonical_second = resolved[second][0]
-            contraindicated = {c.lower() for c in record.get("contraindicated_with", [])}
-            if canonical_second in contraindicated:
-                flags.append({
-                    "drug_a": first,
-                    "drug_b": second,
-                    "severity": record.get("severity", "CONTRAINDICATED"),
-                    "note": record.get("interaction_notes", {}).get(
-                        canonical_second, "Do not co-administer."
-                    ),
-                })
-                break  # one flag per pair, whichever side recorded it
+            found = (_curated_flag(record, resolved[second][0])
+                     or _class_flag(record, resolved[second][1]))
+            if found:
+                # Prefer a curated rule even if the class rule matched the
+                # other direction first.
+                if hit is None or (hit["basis"] == "drug_class"
+                                   and found["basis"] == "curated_pair"):
+                    hit = {"drug_a": first, "drug_b": second, **found}
+                if hit["basis"] == "curated_pair":
+                    break
+        if hit:
+            flags.append(hit)
     return flags
