@@ -185,8 +185,8 @@ def check(records: list) -> int:
     missing one, so this is the gate that decides whether the generated
     index is usable at all.
     """
-    sys.path.insert(0, str(HERE.parent / "src" / "protocol"))
-    import search
+    sys.path.insert(0, str(HERE.parent / "layers" / "common" / "python"))
+    from common import protocol_search as search
 
     misses = 0
     for rec in records:

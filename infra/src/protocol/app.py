@@ -8,8 +8,11 @@ match -- it never free-generates a dosage from model knowledge alone. This
 keeps the liability story sane for a hackathon demo: the model's job is
 retrieval + phrasing, not clinical judgment.
 
-Retrieval scoring lives in `search.py`, which imports no boto3 so it can be
-tested offline (`infra/tests/test_protocol_search.py`).
+Retrieval scoring lives in `common/protocol_search.py`, which imports no
+boto3 so it can be tested offline (`infra/tests/test_protocol_search.py`).
+It sits in the common layer because the hands-free agent
+(`src/agent/tools.py`) ranks with the identical scorer -- a spoken question
+and a typed one must not retrieve different guidelines.
 
 POST /protocol/query
   { "query": "epinephrine dose for anaphylaxis, adult", "patient_weight_kg": 80 }
@@ -18,9 +21,9 @@ import json
 import os
 import uuid
 import boto3
-import search
 from common.audit import log_audit_event
 from common.responses import ok, error, get_user_id
+from common import protocol_search as search
 
 dynamodb = boto3.resource("dynamodb")
 bedrock = boto3.client("bedrock-runtime")

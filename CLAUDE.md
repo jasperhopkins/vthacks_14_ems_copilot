@@ -8,7 +8,7 @@ touching this with anything but synthetic data).
 ## What this is
 
 One mobile app (Expo/React Native), one AWS backend (SAM/CloudFormation),
-four features sharing a common `encounter_id` and audit trail:
+five features sharing a common `encounter_id` and audit trail:
 
 1. **Voice-to-PCR** (`infra/src/pcr/`) — record → Transcribe → Bedrock
    extracts structured fields → saved to DynamoDB.
@@ -21,6 +21,13 @@ four features sharing a common `encounter_id` and audit trail:
 4. **Drug reference/interactions** (`infra/src/drug/`) — lookup +
    contraindication flagging, shared data source for module 2's dosage
    answers.
+5. **Hands-free Copilot** (`infra/src/agent/`) — say "Copilot" and talk;
+   a bounded Bedrock tool loop answers out loud using the other four
+   modules' own code. It may look things up and prepare a draft; it may
+   not file a record or suppress a warning. **Read
+   `docs/AGENT_BOUNDARY.md` before adding a tool** — the boundary is
+   enforced structurally (there is no commit tool; safety flags are
+   concatenated by code after the model finishes), not by the prompt.
 
 Every module writes to the append-only `AuditLogTable` via
 `infra/layers/common/python/common/audit.py`. See `docs/HIPAA_NOTES.md`
@@ -45,8 +52,17 @@ for what that trail actually guarantees and what it doesn't.
 - Seed data for drug reference + protocols (`infra/seed/`), with a script
   to load them post-deploy.
 - Expo app shell on **SDK 57** (RN 0.86, React 19): login screen (Cognito),
-  home menu, all 4 feature screens wired to the API client. Both iOS and
+  home menu, all 5 feature screens wired to the API client. Both iOS and
   Android bundles build clean.
+- **Hands-free mode is implemented, deployed and verified end to end.**
+  `POST /agent/turn` runs a bounded Converse tool loop over seven tools and
+  returns speech (Polly mp3) plus on-screen citations. Verified live:
+  a flagged interaction is spoken first, a protocol answer names its id
+  and carries a page citation, "file that report" is declined, "write that
+  up" produces a `DRAFT` with no `saved_at`, and all nine audit rows for
+  a turn carry the clinician's sub with `actor=AGENT` under one turn id.
+  `python3 infra/tests/smoke_test_agent.py` asserts all of it (24 checks,
+  ~20s).
 
 **Deliberately left as stretch goals / TODOs — prioritize in this order if
 time allows:**
@@ -107,6 +123,7 @@ python3 infra/tests/test_drug_classes.py    # class-level interactions + RxClass
 python3 infra/tests/test_nasemso_ingest.py  # PDF parsing + extracted seed + retrieval floor
 python3 infra/tests/test_drug_sources.py    # FDA label mining + formulary parsing + layer merge
 python3 infra/tests/test_languages.py       # translator language table consistency
+python3 infra/tests/test_agent_policy.py    # the agent action boundary -- run before touching src/agent/
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
@@ -114,6 +131,12 @@ node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presign
 # drug cross-check, and asserts the interaction gets flagged. ~15s.
 python3 infra/tests/smoke_test_pcr.py \
   --username demo@ems-copilot.test --password '<password>'
+
+# The same idea for the hands-free agent. Needs AWS credentials only -- no
+# Cognito password, no device -- because it invokes AgentFunction directly
+# with a synthetic authorizer context, then checks the live route rejects
+# an anonymous caller. Asserts the action boundary, not just that it runs.
+python3 infra/tests/smoke_test_agent.py
 
 # Re-pick the extraction model (costs a few cents of Bedrock inference)
 python3 infra/tests/eval_models.py
@@ -206,6 +229,7 @@ Every route sits behind the same Cognito JWT authorizer
 | `GET /translate/languages` | `src/translate/languages.py:list_handler` | `api.listLanguages` |
 | `POST /drug/lookup` | `src/drug/app.py:lookup_handler` | `api.lookupDrug` |
 | `POST /drug/check-interaction` | `src/drug/app.py:interaction_handler` | `api.checkInteraction` |
+| `POST /agent/turn` | `src/agent/app.py:handler` | `api.agentTurn` |
 
 ## Architecture at a glance
 
@@ -229,7 +253,13 @@ Expo app (Cognito-authenticated)
 | `infra/layers/common/python/common/responses.py` | Response formatting + pulling the Cognito user ID out of the JWT |
 | `infra/src/*/app.py` | The 4 feature handlers |
 | `infra/src/pcr/status.py` | PCR poll target: Bedrock extraction + drug cross-check |
-| `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
+| `infra/layers/common/python/common/protocol_search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline. In the common layer because the agent and `/protocol/query` must rank identically |
+| `infra/src/agent/policy.py` | The action boundary + the parts of a spoken answer the model cannot alter. Pure logic |
+| `infra/src/agent/tools.py` | The agent's entire tool surface — seven tools, encounter-scoped, no commit |
+| `infra/src/agent/app.py` | `POST /agent/turn` — the bounded Converse tool loop |
+| `docs/AGENT_BOUNDARY.md` | **Read before adding an agent tool.** What the agent may/may not do and how each control is enforced |
+| `mobile/src/screens/CopilotScreen.js` | Hands-free UI: continuous stream, wake-word gating, spoken replies, buffered drafts |
+| `mobile/src/screens/PcrReviewScreen.js` | Review + file one buffered Copilot draft, without ending the session |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
 | `infra/layers/common/python/common/languages.py` | The translator's language table — every code the four services want, and which ones AWS actually accepts |
 | `mobile/src/api/micStream.js` | `useVoiceCapture` — mic -> Transcribe, shared by the PCR recorder and the translator |
@@ -246,12 +276,12 @@ Expo app (Cognito-authenticated)
 | `mobile/src/screens/*.js` | The feature screens, incl. the browse + detail pairs |
 | `mobile/src/components/ui.js` | Shared browse controls (pills, segmented, cards, lists) |
 | `mobile/src/config.js` | **Fill this in from `sam deploy` outputs before running the app** |
-| `docs/HIPAA_NOTES.md` | Compliance posture, what's real vs. aspirational, service-by-service eligibility notes |
+| `docs/HIPAA_NOTES.md` | Compliance posture, what's real vs. aspirational, service-by-service eligibility notes (items 10–11 cover the agent) |
 | `infra/README.md` | Full deploy walkthrough |
 
 ## Wiring conventions (what one new endpoint touches)
 
-All six functions share **one IAM role** (`EncounterFunctionsRole`) and
+Every function shares **one IAM role** (`EncounterFunctionsRole`) and
 **one env-var block** (`Globals.Function.Environment`), so adding an
 endpoint is a four-file change:
 
@@ -261,7 +291,11 @@ endpoint is a four-file change:
 2. `template.yaml` again if it calls a new AWS service or table — add the
    statement to `EncounterFunctionsRole`, and for a new table also add its
    name to `Globals.Function.Environment.Variables` (handlers read table
-   names from env, never hardcoded).
+   names from env, never hardcoded). **A var that `!Ref`s a function goes
+   on that function, not in Globals** — Globals applies to every function
+   including the one being referenced, which CloudFormation rejects as a
+   circular dependency. `FINALIZE_FUNCTION_NAME` on `AgentFunction` is the
+   worked example.
 3. The handler: `get_user_id(event)` first, return through `ok()` / `error()`
    (never a raw dict — the CORS headers live in those helpers), and
    `log_audit_event(...)` before returning.
@@ -307,7 +341,7 @@ endpoint is a four-file change:
   bridge. Closing this needs field language from outside the document
   (EMT-written queries, dispatch complaint text) or a semantic index.
 - **Protocols** — PK `protocol_id`. Retrieval is `scan(Limit=200)` in
-  `protocol/app.py` plus token scoring in `protocol/search.py`; fine at seed
+  `protocol/app.py` plus token scoring in `common/protocol_search.py`; fine at seed
   scale, first thing to replace (Bedrock Knowledge Base / OpenSearch) if the
   table grows. Each record carries `symptoms` and `synonyms` — the phrasings
   an EMT actually uses ("stung by a bee", "narcan", "pinpoint pupils") — and
@@ -389,6 +423,89 @@ endpoint is a four-file change:
   - Sample rate is read from `stream.sampleRate` *after* `stream.start()`
     and baked into the signed URL. It can't be assumed — the hardware may
     refuse 16 kHz, and a mismatch produces garbled text, not an error.
+- **The hands-free agent is bounded by structure, not by its prompt, and
+  the distinction is the whole safety argument.** `docs/AGENT_BOUNDARY.md`
+  is the full account; the three things most likely to get broken by a
+  well-meaning edit:
+  - **There is no `commit_pcr` tool, and there must never be one.** The
+    model cannot call what does not exist, so there is no instruction to
+    jailbreak. `policy.HUMAN_ONLY` keeps the forbidden actions as data and
+    `test_agent_policy.py` fails if one appears in the registry. Drafts are
+    also structurally unfileable: only `/commit` writes `saved_at`, which
+    is the sparse `ByUserSaved` GSI's sort key, so an agent draft is
+    *absent* from the filed list rather than filtered out of it.
+  - **Safety flags are concatenated by `policy.compose_speech` after the
+    model has finished talking**, in a fixed order (flags, answer, what
+    went unchecked, match confidence). The model contributes one string to
+    a list built around it, so it cannot decide an interaction probably
+    isn't relevant. Don't "simplify" this by letting the model phrase the
+    warning — `TestWarningsSurvive` feeds it replies that actively try to
+    drop one.
+  - **Tools take fixed schemas and read the encounter from
+    `ToolContext`, never from an argument.** No tool takes a URL, query
+    expression or table name; code decides what to fetch. No tool takes an
+    `encounter_id`, so the agent reaches one patient rather than every
+    chart the medic's token can open. There is deliberately no
+    "list my recent PCRs" tool for the same reason.
+- **`/agent/turn` refuses rather than degrades when identity is unclear.**
+  Every other handler can fall back to `UNKNOWN_USER` because a human is
+  still driving; here a machine is, so a missing `sub` returns 401. The
+  audit rows carry the *clinician's* sub with `actor="AGENT"` and a shared
+  `agent_turn_id` — including the rows written by the finalize worker the
+  agent delegates drafting to, which is why `_run_extraction` takes
+  `actor`/`agent_turn_id` parameters.
+- **Hands-free listens continuously; the wake word gates our storage, not
+  the audio.** `CopilotScreen` keeps one Transcribe stream open for the
+  whole call and only acts on speech beginning "Copilot", but the wake word
+  is detected *in the transcript* — the audio reached Transcribe first.
+  Say "only wake-word turns reach our storage", never "it only listens when
+  spoken to". Item 10 of `docs/HIPAA_NOTES.md`. Two consequences in the
+  code: the mic is fed **silence** during playback rather than stopped (a
+  stopped stream costs a handshake and clips the next utterance, but an
+  open one transcribes the assistant's own voice into the patient's
+  narrative), and segments settling during playback are dropped from the
+  call transcript entirely.
+- **A draft never blocks the assistant.** "Copilot, write that up" hands
+  the transcript to the extraction worker, buffers the encounter in the
+  Drafts list on the hands-free tab, clears `transcriptRef`, and **rolls
+  `encounterIdRef` to a fresh id** — so the next "write that up" is a
+  separate report rather than an overwrite (`encounter_id` is the
+  encounters table's only key), and so later turns aren't scoped to a
+  finished record. Polling for the finished draft runs in its own effect
+  and never touches `busyRef`. This used to make Copilot go quiet until
+  the medic dealt with the paperwork, which is exactly when they can't.
+  `PcrReviewScreen` is pushed *over* the hands-free screen, which stays
+  mounted and listening, and it deliberately never calls
+  `setAudioModeAsync` — releasing the mic there would silence the
+  assistant for the rest of the call.
+- **Play the reply only once the player reports `isLoaded`.** Calling
+  `play()` straight after `createAudioPlayer` works for a one-line
+  translation and silently does nothing for a ~180 KB answer — which is
+  why spoken replies worked everywhere except the long ones, i.e. exactly
+  the contraindication questions. `speak()` calls `play()` both
+  immediately (fast path for short clips) and again on `isLoaded`.
+- **Every exit path in `speak()` unmutes, exactly once.** The mute used to
+  lift only on `didJustFinish`, so a clip that never loaded left the
+  microphone fed silence until a backstop fired — indistinguishable from a
+  dead assistant. A latched mute is the worst failure this screen has;
+  treat `finish()` as the single unmute and keep it idempotent.
+- **The agent will answer from conversation history if you let it.** It
+  once described a PCR draft it had never read, having only said earlier
+  that one was being written. The prompt now forbids describing any record
+  not read *in this turn*, and `read_current_pcr`'s description says the
+  conversation is not a substitute; verified fixed. Residual rough edge:
+  asked to read a draft on a *freshly rolled* encounter it sometimes says
+  it "can't read the report back" rather than "nothing drafted for this
+  call yet". Wrong about itself, but it no longer invents content — and
+  the Drafts list on screen is the real answer to that question. Two
+  prompt iterations failed to shift it; don't burn more on it without a
+  structural idea.
+- **`openTranscribeStream` has two callbacks and they are not
+  interchangeable.** `onUpdate` reports the whole transcript on every
+  revision — right for a live caption. `onSettled` fires once per result
+  when it stops being partial, with just that segment — right for "the
+  medic finished saying a thing", which is what wake-word detection needs.
+  Deriving one from the other means diffing strings and guessing.
 - **The translator works in both directions, and only one of them knows
   what language it is dealing with.** Medic -> patient is ordinary: English
   in, chosen language out, Polly speaks it. Patient -> medic is the reason

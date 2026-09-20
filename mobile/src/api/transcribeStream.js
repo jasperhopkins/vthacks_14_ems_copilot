@@ -31,6 +31,13 @@ const OPEN_TIMEOUT_MS = 15000;
  *   reports it as `languageCode`. This is the patient-speaks direction of
  *   the translator -- a medic who does not know what language they are
  *   hearing cannot pass a `languageCode`.
+ * @param onSettled  fires once per result at the moment it stops being
+ *   partial, with just that segment's final text. `onUpdate` reports the
+ *   whole transcript on every keystroke-equivalent, which is what you want
+ *   for a live caption; the hands-free agent needs the opposite -- "the
+ *   medic finished saying a thing", exactly once, so it can decide whether
+ *   that thing was addressed to it. Deriving that from onUpdate means
+ *   diffing strings and guessing.
  */
 export async function openTranscribeStream({
   sampleRate = 16000,
@@ -38,6 +45,7 @@ export async function openTranscribeStream({
   languageOptions = null,
   preferredLanguage = null,
   onUpdate,
+  onSettled,
   onError,
 } = {}) {
   const credentials = await getAwsCredentials();
@@ -125,9 +133,17 @@ export async function openTranscribeStream({
       let body;
       try { body = JSON.parse(payloadToString(message.payload)); } catch { continue; }
 
+      const justSettled = [];
       for (const result of body?.Transcript?.Results || []) {
         const text = result.Alternatives?.[0]?.Transcript;
         if (typeof text !== "string") continue;
+        // A result settles exactly once: it either arrives non-partial, or
+        // it was partial last time and isn't now. Anything else is a
+        // refinement of text we've already reported as settled.
+        const previous = results.get(result.ResultId);
+        if (!result.IsPartial && (!previous || previous.isPartial)) {
+          justSettled.push(text);
+        }
         results.set(result.ResultId, { text, isPartial: !!result.IsPartial });
         if (result.LanguageCode && !detectedSettled) {
           detectedLanguage = result.LanguageCode;
@@ -139,6 +155,7 @@ export async function openTranscribeStream({
         isPartial: [...results.values()].some((r) => r.isPartial),
         languageCode: detectedLanguage,
       });
+      for (const text of justSettled) onSettled?.(text);
     }
   };
 

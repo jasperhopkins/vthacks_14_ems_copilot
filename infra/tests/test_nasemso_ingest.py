@@ -23,10 +23,10 @@ sys.dont_write_bytecode = True
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "seed"))
-sys.path.insert(0, str(ROOT / "src" / "protocol"))
+sys.path.insert(0, str(ROOT / "layers" / "common" / "python"))
 
 import ingest_nasemso as ing  # noqa: E402
-import search  # noqa: E402
+from common import protocol_search as search  # noqa: E402
 
 SEED_PATH = ROOT / "seed" / "nasemso_protocol_seed.json"
 SEED = json.loads(SEED_PATH.read_text()) if SEED_PATH.exists() else []

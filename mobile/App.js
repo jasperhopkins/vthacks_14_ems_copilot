@@ -4,9 +4,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, Text, Button, TextInput, StyleSheet, SafeAreaView, ActivityIndicator } from "react-native";
 
 import { login } from "./src/api/auth";
+import CopilotScreen from "./src/screens/CopilotScreen";
 import PcrScreen from "./src/screens/PcrScreen";
 import SavedPcrsScreen from "./src/screens/SavedPcrsScreen";
 import PcrDetailScreen from "./src/screens/PcrDetailScreen";
+import PcrReviewScreen from "./src/screens/PcrReviewScreen";
 import ProtocolScreen from "./src/screens/ProtocolScreen";
 import ProtocolDetailScreen from "./src/screens/ProtocolDetailScreen";
 import DrugDetailScreen from "./src/screens/DrugDetailScreen";
@@ -73,6 +75,7 @@ function HomeScreen({ navigation, encounterId }) {
       <Text style={styles.title}>EMS Copilot</Text>
       <Text style={styles.hint}>Encounter: {encounterId}</Text>
       <View style={styles.menu}>
+        <Button title="Hands-Free Copilot" onPress={() => navigation.navigate("Copilot")} />
         <Button title="Voice-to-PCR" onPress={() => navigation.navigate("PCR")} />
         <Button title="My Saved PCRs" onPress={() => navigation.navigate("SavedPcrs")} />
         <Button title="Protocol / Dosage Assistant" onPress={() => navigation.navigate("Protocol")} />
@@ -98,10 +101,20 @@ export default function App() {
         <Stack.Screen name="Home" options={{ title: "EMS Copilot" }}>
           {(props) => <HomeScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
+        <Stack.Screen name="Copilot" options={{ title: "Hands-Free" }}>
+          {(props) => <CopilotScreen {...props} encounterId={encounterId} />}
+        </Stack.Screen>
         <Stack.Screen name="PCR" options={{ title: "Voice-to-PCR" }}>
           {(props) => <PcrScreen {...props} encounterId={encounterId} />}
         </Stack.Screen>
         <Stack.Screen name="SavedPcrs" options={{ title: "My PCRs" }} component={SavedPcrsScreen} />
+        {/* Review one buffered Copilot draft. Pushed over the hands-free
+            screen, which stays mounted and keeps listening underneath. */}
+        <Stack.Screen
+          name="PcrReview"
+          component={PcrReviewScreen}
+          options={{ title: "Review Draft" }}
+        />
         <Stack.Screen
           name="PcrDetail"
           component={PcrDetailScreen}

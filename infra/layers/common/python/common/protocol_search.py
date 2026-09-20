@@ -3,8 +3,15 @@ Protocol retrieval scoring.
 
 Pure logic, deliberately free of boto3 and every AWS import, so
 `infra/tests/test_protocol_search.py` can exercise it against the real seed
-file with no credentials and no stubbing. `app.py` does the DynamoDB scan
-and hands the items here.
+file with no credentials and no stubbing. Callers do the DynamoDB scan
+(`common.tables.scan_all`) and hand the items here.
+
+It lives in the common layer rather than in `src/protocol/` because two
+callers need the identical ranking: `src/protocol/app.py`, where an EMT
+typed the query, and `src/agent/tools.py`, where the hands-free assistant
+picked it from speech. Same reasoning as `common/drugs.py` and
+`common/pcr.py` -- one implementation means the spoken answer and the
+typed answer cannot quietly retrieve different protocols.
 
 This replaces a scorer that counted raw substring hits over
 `json.dumps(item)`. That version had three failure modes worth naming,

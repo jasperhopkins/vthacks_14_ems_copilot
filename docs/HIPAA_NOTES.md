@@ -64,7 +64,8 @@ description of what's built here, not "HIPAA compliant."
 - **Not yet done, recommended before production**: disable/limit Bedrock
   model invocation logging that could capture PHI in CloudWatch, or route
   it through a log sink you control and retain per your policy instead of
-  defaults.
+  defaults. This gets sharper with the hands-free agent, which makes
+  several model calls per spoken turn — see item 11 below.
 
 ## What's actually built for compliance-shaped behavior (real, not aspirational)
 
@@ -195,6 +196,66 @@ description of what's built here, not "HIPAA compliant."
      identical for every encounter, so it reveals nothing about the
      patient — but it would if a deployment ever narrowed the options
      per-call based on who the patient is. Don't.
+
+10. **Hands-free mode listens continuously, and the wake word does not
+    change where the audio goes.** `CopilotScreen` holds one Transcribe
+    stream open for the whole call and acts only on speech that begins
+    "Copilot". That gating is real for *our* storage — nothing reaches the
+    backend, and no tool runs, unless the medic addressed the assistant —
+    but the wake word is detected **in the transcript**, so the audio has
+    already gone to Amazon Transcribe by the time we can tell. What is
+    actually true, and what you may say:
+
+    - Continuous audio goes device -> Transcribe over TLS. Transcribe is
+      HIPAA-eligible and retains nothing; it is not stored by us at all,
+      so item 9's whole analysis applies unchanged and unimproved.
+    - Only wake-word-addressed turns reach our stack, as text.
+    - **You may not say "it only listens when spoken to."** Closing that
+      gap needs on-device keyword spotting, which needs a native module,
+      which rules out Expo Go.
+
+    This matters more than for the Record button, because an always-on
+    assistant in an ambulance hears the patient, the family, the crew and
+    the radio — people who did not press anything and are not the medic.
+    That is a consent question as much as a technical one, and a real
+    deployment needs an answer to it (signage, a crew-facing disclosure,
+    or push-to-talk) rather than a longer paragraph here.
+
+    Two smaller mitigations that are implemented: the microphone is fed
+    silence while the assistant is speaking, so it does not transcribe
+    itself into the patient's narrative; and speech that arrives during
+    playback is discarded rather than appended to the call transcript.
+
+11. **An agent multiplies inferences, which multiplies item 4.** Each
+    hands-free turn is several Bedrock Converse calls carrying clinical
+    narrative, where a tapped PCR was one. Bedrock **model invocation
+    logging** is an opt-in, account-level setting and is off on this
+    account; it is not something this template can turn on or off, so it
+    has to be *verified* rather than assumed. Check it, and keep it off or
+    pointed at a controlled sink you retain per your own policy, before
+    real PHI:
+
+    ```bash
+    aws bedrock get-model-invocation-logging-configuration --region us-east-1
+    ```
+
+    Also note the agent's request carries conversation history and the
+    running call transcript from the device on every turn (see
+    `infra/src/agent/app.py`). That is deliberate — the backend keeps no
+    second transcript of the medic's dialogue with the assistant, only
+    hashed audit rows — but it means the same content crosses the wire
+    repeatedly within one call, and it extends item 9's "chain of custody
+    runs through the device" to the dialogue as well as the narration.
+
+    The action boundary itself — what the agent may and may not do, and
+    why each control is structural rather than a prompt instruction — is
+    `docs/AGENT_BOUNDARY.md`. Read it before adding a tool. The parts with
+    direct compliance weight: every agent action is audited against the
+    *clinician's* Cognito sub with `actor="AGENT"` and a turn id, so
+    §164.312(b) still answers "which workforce member"; `/agent/turn`
+    returns 401 rather than acting for `UNKNOWN_USER`; and every tool is
+    scoped to the session's single encounter, so the agent's reach is one
+    patient rather than every chart the medic's token can open.
 
 ## For the hackathon demo itself
 

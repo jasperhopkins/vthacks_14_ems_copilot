@@ -773,6 +773,49 @@ Resources:
             Path: /drug/lookup
             Method: POST
 
+  # ---- Module 5: the hands-free conversational assistant --------------
+  # One route, a bounded Bedrock tool loop behind it. The action boundary
+  # it runs inside is src/agent/policy.py and src/agent/tools.py; read
+  # docs/AGENT_BOUNDARY.md before widening either.
+  #
+  # It shares EncounterFunctionsRole like everything else, which means its
+  # IAM reach is the union of the four feature modules'. The narrowing that
+  # matters is in the tool registry, not in IAM: the agent can only do what
+  # a registered tool does, every tool is encounter-scoped, and no tool
+  # commits. Splitting the role would be the right next step if this grew
+  # past a demo.
+  AgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/agent/
+      Handler: app.handler
+      Role: !GetAtt EncounterFunctionsRole.Arn
+      Layers: [!Ref CommonLayer]
+      # A turn is several Bedrock round trips plus tool calls plus Polly.
+      # Typically ~4s; this is headroom, not a target. API Gateway's own
+      # 30s ceiling is the real limit and is not adjustable -- if turns
+      # ever approach it, cut MAX_TOOL_ITERATIONS rather than raising this.
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          # Merged with Globals, not replacing it. This one cannot live in
+          # Globals: that block applies to every function including
+          # PcrFinalizeFunction itself, and a function referencing its own
+          # name is a circular dependency CloudFormation rejects.
+          #
+          # The agent drafts a PCR by invoking the real finalize worker
+          # rather than running its own extraction -- one prompt, one
+          # cross-check, one PCR shape. See src/agent/tools.py.
+          FINALIZE_FUNCTION_NAME: !Ref PcrFinalizeFunction
+      Events:
+        TurnApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /agent/turn
+            Method: POST
+
   DrugInteractionFunction:
     Type: AWS::Serverless::Function
     Properties:

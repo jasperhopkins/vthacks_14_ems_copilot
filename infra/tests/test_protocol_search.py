@@ -5,7 +5,7 @@ credentials, no deploy needed:
 
     python3 infra/tests/test_protocol_search.py
 
-`src/protocol/search.py` imports no boto3 precisely so this can run against
+`common/protocol_search.py` imports no boto3 precisely so this can run against
 the real seed file with nothing stubbed. Scoring *and* the seed data are
 tested together on purpose: the scorer is only as good as the `symptoms` /
 `synonyms` lists it matches against, and a regression in either one shows up
@@ -23,9 +23,9 @@ import unittest
 sys.dont_write_bytecode = True
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src" / "protocol"))
+sys.path.insert(0, str(ROOT / "layers" / "common" / "python"))
 
-import search  # noqa: E402
+from common import protocol_search as search  # noqa: E402
 
 PROTOCOLS = json.loads((ROOT / "seed" / "protocol_reference_seed.json").read_text())
 

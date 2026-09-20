@@ -26,16 +26,20 @@ mark the record EXTRACTING) and re-invokes ITSELF with InvocationType
 the function's full 300s timeout. Polling was already how the client
 learns about PCR state, so this costs the app nothing new.
 
-Two transcript sources feed this, and they are the same from here on:
+Three transcript sources feed this, and they are the same from here on:
   - streaming (the app's live Transcribe WebSocket) passes "transcript"
   - chunked (chunk.py -> live.py) passes none, and it is stitched from the
     chunk map, which must be fully harvested first
+  - the hands-free agent ("Copilot, write that up") skips the HTTP half
+    entirely and invokes the worker below directly with the transcript it
+    holds on the device -- see src/agent/tools.py. It gets a DRAFT like
+    every other path, and like every other path it cannot file one.
 """
 import json
 import os
 import time
 import boto3
-from common.audit import log_audit_event
+from common.audit import HUMAN, log_audit_event
 from common.pcr import cross_check, extract_structured_pcr
 from common.responses import ok, error, get_user_id
 
@@ -69,8 +73,59 @@ def _fail(encounter_id: str, reason: str) -> None:
 # The async half: Bedrock extraction + drug cross-check.
 # ---------------------------------------------------------------------
 
-def _run_extraction(encounter_id: str, user_id: str, source_ip: str | None) -> dict:
+def _run_extraction(encounter_id: str, user_id: str, source_ip: str | None,
+                    transcript: str | None = None,
+                    capture_mode: str = "STREAMING",
+                    actor: str = HUMAN, agent_turn_id: str | None = None) -> dict:
+    """Extract, cross-check, and write the DRAFT.
+
+    `transcript` is passed only by the hands-free agent
+    (src/agent/tools.py::draft_pcr_from_transcript), which holds the
+    running transcript on the device and has never written it here. The
+    HTTP path leaves it None, having already persisted it inline before
+    invoking this worker.
+
+    `actor`/`agent_turn_id` travel with it for the same reason. This worker
+    does the extraction and the drug cross-check for both paths, so without
+    them the rows it writes claim the medic did by hand what the assistant
+    did on their behalf -- attributable to the right person, but silent
+    about what actually performed it, which is half the point of recording
+    an actor at all.
+
+    Letting the worker accept it is what keeps extraction to exactly one
+    implementation: the agent's draft goes through this same prompt, the
+    same normalisation and the same drug cross-check as the one the Record
+    button produces, rather than through a parallel copy that can drift.
+    """
     record = encounters_table.get_item(Key={"encounter_id": encounter_id}).get("Item")
+
+    if transcript is not None:
+        transcript = transcript.strip()
+        if not record:
+            encounters_table.put_item(
+                Item={
+                    "encounter_id": encounter_id,
+                    "record_type": "PCR",
+                    "created_by": user_id,
+                    "created_at": int(time.time() * 1000),
+                    "capture_mode": capture_mode,
+                    "status": "EXTRACTING",
+                    "transcript": transcript,
+                },
+                ConditionExpression="attribute_not_exists(encounter_id)",
+            )
+            record = {"encounter_id": encounter_id, "transcript": transcript}
+        else:
+            if record.get("created_by") not in (user_id, None):
+                return {"status": "FAILED", "error": "Not your encounter"}
+            encounters_table.update_item(
+                Key={"encounter_id": encounter_id},
+                UpdateExpression="SET #st = :extracting, transcript = :t REMOVE #err",
+                ExpressionAttributeNames={"#st": "status", "#err": "error"},
+                ExpressionAttributeValues={":extracting": "EXTRACTING", ":t": transcript},
+            )
+            record = {**record, "transcript": transcript}
+
     if not record:
         return {"status": "FAILED", "error": f"No encounter {encounter_id}"}
 
@@ -94,6 +149,8 @@ def _run_extraction(encounter_id: str, user_id: str, source_ip: str | None) -> d
             resource="drug_reference",
             payload={"drugs": drugs, "flags_found": len(interaction_flags), "trigger": "pcr_auto"},
             source_ip=source_ip,
+            actor=actor,
+            agent_turn_id=agent_turn_id,
         )
 
     # UpdateItem rather than PutItem: chunk writes can touch the same record
@@ -120,6 +177,8 @@ def _run_extraction(encounter_id: str, user_id: str, source_ip: str | None) -> d
         resource="encounters.pcr",
         payload={"status": "DRAFT", "structured_pcr": structured},
         source_ip=source_ip,
+        actor=actor,
+        agent_turn_id=agent_turn_id,
     )
     return {"status": "DRAFT", "pcr": structured, "interaction_flags": interaction_flags}
 
@@ -129,8 +188,17 @@ def _run_extraction(encounter_id: str, user_id: str, source_ip: str | None) -> d
 def handler(event, context):
     # Async self-invocation: no HTTP wrapper, just do the work.
     if isinstance(event, dict) and event.get(WORKER_FLAG):
-        return _run_extraction(event["encounter_id"], event.get("user_id", "UNKNOWN_USER"),
-                               event.get("source_ip"))
+        return _run_extraction(
+            event["encounter_id"],
+            event.get("user_id", "UNKNOWN_USER"),
+            event.get("source_ip"),
+            # Only the agent path sets these; the HTTP path has already
+            # persisted the transcript by the time it invokes this.
+            transcript=event.get("transcript"),
+            capture_mode=event.get("capture_mode", "STREAMING"),
+            actor=event.get("actor", HUMAN),
+            agent_turn_id=event.get("agent_turn_id"),
+        )
 
     user_id = get_user_id(event)
     source_ip = event.get("requestContext", {}).get("http", {}).get("sourceIp")

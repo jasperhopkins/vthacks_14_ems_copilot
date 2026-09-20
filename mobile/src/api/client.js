@@ -94,6 +94,23 @@ export const api = {
         speak,
       },
     }),
+  // --- The hands-free assistant ---------------------------------------
+  // One utterance in, one spoken answer out. `transcript` is everything
+  // said on this call so far: the backend has no copy, so "write that up"
+  // has to carry it. `history` is the dialogue so far, also device-held --
+  // deliberately, so the stack keeps no second transcript of the medic
+  // talking to the assistant. See infra/src/agent/app.py.
+  agentTurn: ({ encounterId, utterance, transcript, history }) =>
+    request("/agent/turn", {
+      method: "POST",
+      body: {
+        encounter_id: encounterId,
+        utterance,
+        transcript,
+        history,
+      },
+    }),
+
   lookupDrug: (drugName, encounterId) =>
     request("/drug/lookup", { method: "POST", body: { drug_name: drugName, encounter_id: encounterId } }),
   checkInteraction: (drugs, encounterId) =>
