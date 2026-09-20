@@ -126,6 +126,7 @@ python3 infra/tests/test_languages.py       # translator language table consiste
 python3 infra/tests/test_agent_policy.py    # the agent action boundary -- run before touching src/agent/
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 node mobile/tools/test_imports.mjs          # a name used from theme/ui/Logo but never imported
+node mobile/tools/test_utterance_router.mjs # hands-free wake/settle/queue rules -- run before touching CopilotScreen
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
 # it goes through Cognito SRP -> API Gateway -> Transcribe -> Bedrock ->
@@ -264,6 +265,7 @@ Expo app (Cognito-authenticated)
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
 | `infra/layers/common/python/common/languages.py` | The translator's language table — every code the four services want, and which ones AWS actually accepts |
 | `mobile/src/api/micStream.js` | `useVoiceCapture` — mic -> Transcribe, shared by the PCR recorder and the translator |
+| `mobile/src/api/utteranceRouter.js` | **Hands-free routing rules — narration vs request, settle, queue, mute.** Pure logic, no React; `CopilotScreen` only applies its effects |
 | `infra/seed/rxclass.py` | NLM RxClass client — seed-time only, never called from a Lambda |
 | `infra/seed/openfda.py` | FDA label mining — seed-time only, extractive, never a model |
 | `infra/seed/ingest_nasemso_meds.py` | NASEMSO Appendix III → the 65-drug EMS formulary |
@@ -566,19 +568,66 @@ endpoint is a four-file change:
   question. Ten phrasings verified routing to the tool; the three ordinary
   lookups verified still not drafting. Re-check both sides if you touch
   either wording.
-- **Copilot waits `UTTERANCE_SETTLE_MS` before answering, and that is the
-  dial to turn.** Transcribe settles a result at *any* natural pause — a
-  breath mid-sentence, a moment's thought — so dispatching on the first
-  settled segment answers half a question. Every further segment landing
-  inside the window is appended and the clock restarts, wake word or not.
-  Raise it if Copilot cuts in early, lower it if replies feel sluggish.
-  `UTTERANCE_MAX_MS` caps how far it can be extended: a cab with
-  continuous speech in it re-arms the timer indefinitely, and what reaches
-  Copilot is then a paragraph of narration with the request buried in it.
-  Continuations are appended to `transcriptRef` as well as to the pending
-  request — forgetting that quietly thinned every PCR drafted after a
-  multi-segment question. A continuation that contains the wake word is a
-  *new* request: the previous one is dispatched and collection restarts.
+- **The hands-free routing rules live in `src/api/utteranceRouter.js`, not
+  in the screen, and that is why they are testable.** Deciding whether
+  speech was narration or a request, when a request has finished being
+  spoken, and what happens to speech that arrives at a bad moment used to
+  be seven `useRef`s and a pile of `if`s inside `CopilotScreen`. Three of
+  those branches silently discarded what the medic had just said. The
+  router is pure — it takes `now` as an argument, schedules nothing, and
+  returns effects (`narration`, `dispatch`, `armMs`, `awaiting`) that the
+  screen applies. `node mobile/tools/test_utterance_router.mjs` has a
+  case for every rule; run it before touching either file. The rules that
+  matter:
+  - **Nothing is dropped because the assistant is busy.** A request asked
+    mid-reply is queued and goes when the turn ends. Past `maxQueued` the
+    words are merged into the last queued request rather than lost.
+    `turnEnded` deliberately *stays busy* when it hands a queued request
+    over, because the gap between "turn finished" and "next turn started"
+    is otherwise a window in which a settling segment dispatches a second
+    concurrent turn against the same encounter.
+  - **The settle window adapts to whether the request sounds finished.**
+    Transcribe punctuates, so a segment ending without `.?!` is a medic
+    drawing breath, and gets `openSettleMs` (2.6s) instead of `settleMs`
+    (1.5s). A flat window cannot serve both "what's the epi dose?" and
+    someone dictating a report.
+  - **The growth cap is 15s *and* 140 words, not 6s.** Six seconds is
+    less than a medic takes to dictate a write-up request, so the old cap
+    guillotined long requests mid-sentence and the remainder arrived with
+    no request open — one call split across several turns, which is the
+    reported failure. Word count is what actually stops continuous cab
+    chatter from burying a request; the clock alone punished the
+    legitimate case.
+  - **Speech settling during a spoken reply is kept if it was in flight.**
+    A segment landing within `muteGraceMs` of the mute was spoken *before*
+    it and belongs in the narration; later ones are dropped, as is
+    anything that reads as the assistant's own reply. The old blanket
+    discard threw away the tail of every sentence the medic was mid-way
+    through when Copilot started talking.
+  - **A wake word split across two segments still wakes it.** A trailing
+    fragment that could be the front of "Copilot" ("co", "co-pi") is held
+    back one segment rather than narrated; if the next segment completes
+    the word it is a request, and if it does not the fragment is released
+    into the narration.
+- **A draft takes back only the transcript it was given, never the whole
+  buffer.** `dispatch` captures `sentTranscript` before the call and, when
+  the backend confirms a draft started, removes exactly that prefix. A
+  turn takes seconds and the medic keeps narrating through it, so
+  clearing `transcriptRef` outright deleted everything said between the
+  request and the response — half of one call's narration, gone, with the
+  other half already filed. The transcript is append-only between drafts,
+  which is what makes the prefix exact; if it ever is not, the code keeps
+  everything rather than lose any of it.
+- **If Copilot cuts in early or feels sluggish, `settleMs` /
+  `openSettleMs` in `utteranceRouter.js` are the dials** — nothing in
+  `CopilotScreen` decides this any more. Two rules there are easy to
+  break by accident: every segment landing inside the window is appended
+  to the *pending request* and the clock restarts, wake word or not; and
+  each one is also appended to `transcriptRef`, because it is still
+  speech from the call. Forgetting the second quietly thinned every PCR
+  drafted after a multi-segment question. A continuation that does
+  contain the wake word is a *new* request — the previous one is sent and
+  collection restarts.
 - **Automatic barge-in is not implementable here, and the reason is echo,
   not effort.** Hearing the medic over a reply needs the microphone open
   during playback, which needs `.playAndRecord`; but there is no echo

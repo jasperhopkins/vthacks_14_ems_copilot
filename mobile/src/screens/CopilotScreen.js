@@ -51,13 +51,11 @@ import { api } from "../api/client";
 import { enterPlaybackSession, releaseAudioSession } from "../api/audioSession";
 import { openTranscribeStream } from "../api/transcribeStream";
 import { downmixInt16 } from "../api/micStream";
-import { colors, radius, space, severityStyle, formatTimestamp } from "../theme";
+import { createUtteranceRouter, DEFAULTS as ROUTER } from "../api/utteranceRouter";
+import { Button, ErrorBox } from "../components/ui";
+import { colors, radius, shadow, space, type, severityStyle, formatTimestamp } from "../theme";
 
 const SAMPLE_RATE = 16000;
-
-// "Copilot", as Transcribe actually writes it -- it varies between
-// "copilot", "co-pilot" and "co pilot" depending on how it's said.
-const WAKE_WORD = /\bco[\s-]?pilot\b/i;
 
 // How long after a spoken reply finishes before the microphone is live
 // again. Playback on the device speaker keeps ringing out a little past
@@ -73,21 +71,11 @@ const PLAYBACK_GRACE_MS = 1500;
 // goes wrong. A latched mute is indistinguishable from a broken assistant.
 const MAX_MUTE_MS = 45000;
 
-// How long to keep listening after a phrase settles before deciding the
-// medic has finished talking. Transcribe settles a result at any natural
-// pause -- drawing breath mid-sentence, or thinking -- so dispatching on
-// the first settled segment answers half a question. Every further segment
-// that lands inside this window is appended and the clock restarts.
-// This is the dial to turn if Copilot cuts in too early or feels sluggish.
-const UTTERANCE_SETTLE_MS = 1500;
-
-// However many continuations arrive, stop growing one request after this.
-// Without it a cab with continuous speech in it -- the partner, the radio,
-// the patient -- keeps re-arming the settle timer, and what finally
-// reaches Copilot is a paragraph of clinical narration with "write that
-// up" buried in it, which it quite reasonably answers as a protocol
-// question instead of doing the paperwork.
-const UTTERANCE_MAX_MS = 6000;
+// When Copilot decides the medic has stopped talking, how long one
+// request may keep growing, and what happens to speech that arrives while
+// it is answering all live in src/api/utteranceRouter.js -- pure logic,
+// covered by mobile/tools/test_utterance_router.mjs. The dials are
+// ROUTER.settleMs / ROUTER.maxMs / ROUTER.maxWords.
 
 // A dropped Transcribe socket is reopened rather than surfaced as a dead
 // session. Sessions do not last a whole shift on their own: the far end
@@ -104,28 +92,6 @@ const MIN_NARRATION_WORDS = 12;
 
 const DRAFT_POLL_MS = 2500;
 const DRAFT_TIMEOUT_MS = 180000;
-
-/**
- * The part of a segment that is patient narration rather than talking to
- * Copilot: everything *before* the wake word.
- *
- * Without this the transcript filled up with "Copilot, transcribe a PCR
- * for this patient" -- which is not clinical content, but is a non-empty
- * string, so the backend's empty-transcript guard never fired and
- * extraction ran on the command itself. The result was a PCR with every
- * field null: the reported "entirely empty draft".
- */
-function narrationOf(text) {
-  const match = WAKE_WORD.exec(text);
-  return (match ? text.slice(0, match.index) : text).trim();
-}
-
-/** Everything after the wake word, or "" when it was just the name. */
-function commandAfterWake(text) {
-  const match = WAKE_WORD.exec(text);
-  if (!match) return null;
-  return text.slice(match.index + match[0].length).replace(/^[\s,.:;-]+/, "").trim();
-}
 
 const newEncounterId = (base) => `${base}-copilot-${Date.now().toString(36)}`;
 
@@ -144,11 +110,21 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   const silenceTimerRef = useRef(null);
   const sampleRateRef = useRef(null);
   const unmountedRef = useRef(false);
-  // Speech heard since the last dispatch, and the timer deciding when the
-  // medic has actually stopped talking. See UTTERANCE_SETTLE_MS.
-  const pendingUtteranceRef = useRef("");
+  // What the medic said, and what it was for. The router owns the
+  // pending request, the "they said Copilot and nothing else" state, the
+  // queue of things asked while the assistant was answering, and the
+  // segments held back during a spoken reply. It schedules nothing --
+  // `armMs` in its effects is a request to set this timer.
+  const routerRef = useRef(null);
+  if (routerRef.current === null) routerRef.current = createUtteranceRouter();
   const utteranceTimerRef = useRef(null);
-  const utteranceStartedAtRef = useRef(0);
+  // Declared up here, filled in below. `dispatch` re-enters itself when a
+  // queued request is released, and `speak` reaches applyEffects when the
+  // mute lifts, so both are forward references -- they resolve through a
+  // ref rather than through declaration order, and neither is touched
+  // during render.
+  const dispatchRef = useRef(null);
+  const applyEffectsRef = useRef(null);
   // Set while the screen is handing the audio session back. speak()'s
   // cleanup checks it before restarting the microphone: without it, a
   // reply finishing just as the medic navigates away puts the session
@@ -175,21 +151,21 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // silence) and the dispatcher (no turn starts while one is in flight).
   const mutedRef = useRef(false);
   const busyRef = useRef(false);
-  // Set when the medic said "Copilot" and nothing else -- the next thing
-  // they say is the command.
-  const awaitingCommandRef = useRef(false);
   // Set just before navigating somewhere that is still "inside" the
   // hands-free session (reviewing a draft, reading a cited guideline), so
   // the blur handler below leaves the microphone alone. See releaseAudio.
   const keepAliveRef = useRef(false);
 
-  /** Add a segment's clinical content to the call transcript, if it has
-   *  any. Mirrored into state so the medic can see what will become the
-   *  report -- an empty draft should never be a surprise at the end. */
-  const recordNarration = useCallback((segment) => {
-    const words = narrationOf(segment);
-    if (!words) return;
-    transcriptRef.current = `${transcriptRef.current} ${words}`.trim();
+  /** Append clinical content to the call transcript. The router has
+   *  already taken the wake word and the request out of it. Mirrored into
+   *  state so the medic can see what will become the report -- an empty
+   *  draft should never be a surprise at the end.
+   *
+   *  Append-only between drafts, which is what lets a finished draft
+   *  remove exactly the text it consumed instead of clearing the lot. */
+  const appendNarration = useCallback((text) => {
+    if (!text) return;
+    transcriptRef.current = `${transcriptRef.current} ${text}`.trim();
     setNarration(transcriptRef.current);
   }, []);
 
@@ -327,7 +303,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
    * the gap on synthetic silence, because a stream that simply stops
    * sending frames gets dropped at the far end.
    */
-  const speak = useCallback(async (base64Mp3, key) => {
+  const speak = useCallback(async (base64Mp3, key, replyText = "") => {
     if (!base64Mp3) return;
 
     let file;
@@ -344,6 +320,12 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
 
     const wasListening = !!sessionRef.current;
     mutedRef.current = true;
+    // Segments settling from here on are held by the router rather than
+    // discarded outright: the tail of what the medic said just before the
+    // mute is still coming through Transcribe, and it is part of the
+    // patient's narrative. It decides at muteEnded, when the reply text
+    // is known and its own voice can be told apart from theirs.
+    routerRef.current.muteStarted(Date.now());
     try {
       try { stream.stop(); } catch { /* not started */ }
       if (wasListening) startSilenceKeepAlive();
@@ -371,6 +353,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
         }
       }
       mutedRef.current = false;
+      applyEffectsRef.current?.(routerRef.current.muteEnded(replyText, Date.now()));
     }
   }, [stream, playClip, startSilenceKeepAlive, stopSilenceKeepAlive]);
 
@@ -436,15 +419,27 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // ------------------------------------------------------------------
 
   const dispatch = useCallback(async (utterance) => {
+    // The router will not hand out a second utterance while a turn is
+    // running, so this should never fire -- but two turns in flight
+    // against one encounter is bad enough to guard twice.
+    if (busyRef.current) { routerRef.current.enqueue(utterance); return; }
     busyRef.current = true;
+    routerRef.current.turnStarted();
     setPhase("thinking");
     setError(null);
     const encounterId = encounterIdRef.current;
+    // Exactly what the backend is about to be given. A turn takes several
+    // seconds, and the medic keeps narrating through it -- so "the
+    // transcript that became the draft" and "the transcript now" are not
+    // the same string, and clearing the latter threw away everything said
+    // in between. That is one call's narration split across two reports,
+    // with the second half simply gone.
+    const sentTranscript = transcriptRef.current;
     try {
       const res = await api.agentTurn({
         encounterId,
         utterance,
-        transcript: transcriptRef.current,
+        transcript: sentTranscript,
         history: historyRef.current.slice(-HISTORY_TURNS * 2),
       });
       if (unmountedRef.current) return;
@@ -474,13 +469,23 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
           { encounterId: draftedId, at: Date.now(), status: "pending", flags: [] },
           ...prev.filter((d) => d.encounterId !== draftedId),
         ]);
-        transcriptRef.current = "";
-        setNarration("");
+        // Take back only the text that went into the draft, keeping
+        // whatever was narrated while it was being written. The
+        // transcript is append-only between drafts, so this prefix is
+        // exact; if it somehow is not, keep everything rather than lose
+        // it -- a duplicated line is visible and editable in review, a
+        // missing one is not.
+        const current = transcriptRef.current;
+        const remainder = current.startsWith(sentTranscript)
+          ? current.slice(sentTranscript.length).trim()
+          : current;
+        transcriptRef.current = remainder;
+        setNarration(remainder);
         encounterIdRef.current = newEncounterId(baseEncounterId);
       }
 
       setPhase("speaking");
-      await speak(res.speech_audio_base64_mp3, res.turn_id);
+      await speak(res.speech_audio_base64_mp3, res.turn_id, res.speech);
       if (!unmountedRef.current) setPhase("listening");
     } catch (e) {
       if (!unmountedRef.current) {
@@ -490,106 +495,55 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       }
     } finally {
       busyRef.current = false;
+      // Anything asked while this turn was running was held rather than
+      // dropped; it goes now. Deferred a tick so the queued turn does not
+      // start inside this one's finally block.
+      const queued = routerRef.current.turnEnded();
+      if (queued.dispatch && !unmountedRef.current) {
+        setTimeout(() => dispatchRef.current?.(queued.dispatch), 0);
+      }
     }
   }, [baseEncounterId, speak]);
+
+  useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
 
   // ------------------------------------------------------------------
   // Deciding whether a finished sentence was meant for us
   // ------------------------------------------------------------------
 
-  /** Send whatever has accumulated, once the medic has stopped talking. */
-  const flushUtterance = useCallback(() => {
-    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
-    utteranceTimerRef.current = null;
-    const utterance = pendingUtteranceRef.current.trim();
-    pendingUtteranceRef.current = "";
-    utteranceStartedAtRef.current = 0;
-    setAwaiting(false);
-    if (!utterance || busyRef.current) return;
-    dispatch(utterance);
-  }, [dispatch]);
+  /**
+   * Perform one set of router effects.
+   *
+   * The router is pure: it decides, this applies. Keeping the timer here
+   * and the rules there is what made the rules testable -- every branch
+   * below used to be an `if` buried in the settled-segment handler, and
+   * three of them silently dropped what the medic had just said.
+   */
+  const applyEffects = useCallback((fx) => {
+    if (!fx) return;
+    if (fx.narration) appendNarration(fx.narration);
 
-  /** Start or extend the "are they finished?" window, up to the cap. */
-  const armUtteranceTimer = useCallback(() => {
-    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
-    if (!utteranceStartedAtRef.current) utteranceStartedAtRef.current = Date.now();
-    const spent = Date.now() - utteranceStartedAtRef.current;
-    if (spent >= UTTERANCE_MAX_MS) { flushUtterance(); return; }
-    utteranceTimerRef.current = setTimeout(
-      flushUtterance,
-      Math.min(UTTERANCE_SETTLE_MS, UTTERANCE_MAX_MS - spent)
-    );
-  }, [flushUtterance]);
-
-  const onSettled = useCallback((text) => {
-    const segment = (text || "").trim();
-    if (!segment) return;
-    // Arrived while the assistant was talking: that is the assistant's own
-    // voice leaking back, or the medic talking over it. Either way it does
-    // not belong in the patient's narrative.
-    if (mutedRef.current) return;
-
-    // Already collecting a command: everything that lands inside the
-    // window is part of the same request, wake word or not. Transcribe
-    // settles a segment at any natural pause, so "Copilot, what's the dose
-    // for..." and "...a 40 kilo kid" arrive separately and are one
-    // question.
-    if (pendingUtteranceRef.current) {
-      const more = commandAfterWake(segment);
-      // Everything heard is still narration for the report. Forgetting to
-      // record continuations here quietly thinned every PCR drafted after
-      // a multi-segment question.
-      recordNarration(segment);
-      if (more === null) {
-        pendingUtteranceRef.current = `${pendingUtteranceRef.current} ${segment}`.trim();
-        armUtteranceTimer();
-        return;
-      }
-      // They said "Copilot" again: this is a new request, not a
-      // continuation of the last one. Send what we had and start over.
-      const previous = pendingUtteranceRef.current;
-      pendingUtteranceRef.current = "";
-      utteranceStartedAtRef.current = 0;
+    // null means "leave the timer alone"; 0 disarms it.
+    if (fx.armMs !== null && fx.armMs !== undefined) {
       if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
       utteranceTimerRef.current = null;
-      if (previous && !busyRef.current) dispatch(previous);
-      if (more) {
-        pendingUtteranceRef.current = more;
-        armUtteranceTimer();
-      } else {
-        awaitingCommandRef.current = true;
-        setAwaiting(true);
+      if (fx.armMs > 0) {
+        utteranceTimerRef.current = setTimeout(() => {
+          utteranceTimerRef.current = null;
+          applyEffectsRef.current(routerRef.current.timeout(Date.now()));
+        }, fx.armMs);
       }
-      return;
     }
 
-    const command = commandAfterWake(segment);
+    setAwaiting(!!fx.awaiting);
+    if (fx.dispatch) dispatchRef.current?.(fx.dispatch);
+  }, [appendNarration]);
 
-    if (awaitingCommandRef.current && command === null) {
-      // They said "Copilot" last time and this is the follow-up.
-      awaitingCommandRef.current = false;
-      recordNarration(segment);
-      pendingUtteranceRef.current = segment;
-      armUtteranceTimer();
-      return;
-    }
+  useEffect(() => { applyEffectsRef.current = applyEffects; }, [applyEffects]);
 
-    // Anything not addressed to the assistant is still part of the call --
-    // it is the narration that becomes the PCR. The wake word and what
-    // follows it are stripped: talking to Copilot is not patient care.
-    recordNarration(segment);
-
-    if (command === null) return;
-    if (command === "") {
-      awaitingCommandRef.current = true;
-      setAwaiting(true);
-      return;
-    }
-    if (busyRef.current) return;   // still answering the last one
-    pendingUtteranceRef.current = command;
-    setAwaiting(true);
-    armUtteranceTimer();
-  }, [armUtteranceTimer, dispatch, recordNarration]);
+  const onSettled = useCallback((text) => {
+    applyEffectsRef.current(routerRef.current.segment(text, Date.now()));
+  }, []);
 
   // `onSettled` is handed to the stream once, at open, so it closes over
   // the first render's callback. A ref keeps the stream calling the
@@ -641,6 +595,13 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
 
     sessionRef.current?.abort();
     sessionRef.current = null;
+    // Half a question, spoken across a socket drop, must not be glued to
+    // whatever is said after the reconnect. The call transcript is
+    // untouched -- only the pending request is abandoned.
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+    utteranceTimerRef.current = null;
+    routerRef.current.resetPending();
+    setAwaiting(false);
     setPhase("connecting");
     await new Promise((r) => setTimeout(r, RECONNECT_DELAYS_MS[attempt]));
     if (unmountedRef.current || tearingDownRef.current) return;
@@ -670,9 +631,10 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     preRollRef.current = [];
     mutedRef.current = false;
     busyRef.current = false;
-    awaitingCommandRef.current = false;
     tearingDownRef.current = false;
-    pendingUtteranceRef.current = "";
+    routerRef.current.reset();
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+    utteranceTimerRef.current = null;
     reconnectAttemptRef.current = 0;
     setAwaiting(false);
 
@@ -724,7 +686,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     tearingDownRef.current = true;
     if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
     utteranceTimerRef.current = null;
-    pendingUtteranceRef.current = "";
+    routerRef.current.reset();
     try { stream.stop(); } catch { /* already stopped */ }
     const session = sessionRef.current;
     sessionRef.current = null;
@@ -737,7 +699,6 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     silenceTimerRef.current = null;
     mutedRef.current = false;
     busyRef.current = false;
-    awaitingCommandRef.current = false;
     await releaseAudioSession();
   }, [stream]);
 
@@ -782,9 +743,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
               check, or “write that up”. Everything else you say is kept as the narration
               for this call.
             </Text>
-            <Pressable style={[styles.button, styles.primary]} onPress={start}>
-              <Text style={styles.primaryText}>Start hands-free</Text>
-            </Pressable>
+            <Button title="Start hands-free" onPress={start} />
           </>
         ) : (
           <>
@@ -793,16 +752,13 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
               // hearing the medic over the reply needs the microphone open
               // during playback, and without echo cancellation the only
               // thing it reliably hears is Copilot itself.
-              <Pressable
-                style={[styles.button, styles.secondary]}
+              <Button
+                title="Stop talking — I'll speak"
+                variant="secondary"
                 onPress={() => stopPlaybackRef.current?.()}
-              >
-                <Text style={styles.secondaryText}>Stop talking — I'll speak</Text>
-              </Pressable>
+              />
             )}
-            <Pressable style={[styles.button, styles.stop]} onPress={stop}>
-              <Text style={styles.primaryText}>End hands-free</Text>
-            </Pressable>
+            <Button title="End hands-free" variant="stop" onPress={stop} />
           </>
         )}
       </View>
@@ -857,14 +813,15 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
         </View>
       )}
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorBox>{error}</ErrorBox>}
 
       {/* The medic cannot file a report by voice, and finds that out here
           rather than by asking twice. */}
       {live && (
         <View style={styles.boundary}>
+          <Text style={styles.boundaryTitle}>What Copilot won't do</Text>
           <Text style={styles.boundaryText}>
-            Copilot can look things up and prepare a draft. Filing a report is yours —
+            It can look things up and prepare a draft. Filing a report is yours —
             review it and tap save.
           </Text>
         </View>
@@ -926,10 +883,12 @@ function DraftRow({ draft, onPress }) {
 
   return (
     <Pressable
-      style={[
+      accessibilityRole="button"
+      style={({ pressed }) => [
         styles.draft,
         draft.status === "failed" && styles.draftFailed,
         draft.status === "ready" && styles.draftReady,
+        pressed && styles.draftPressed,
       ]}
       onPress={onPress}
     >
@@ -992,7 +951,8 @@ function Turn({ turn, onOpenProtocol }) {
           {protocols.map((p) => (
             <Pressable
               key={p.protocol_id}
-              style={styles.source}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.source, pressed && styles.sourcePressed]}
               onPress={() => onOpenProtocol("ProtocolDetail", {
                 protocolId: p.protocol_id, title: p.title,
               })}
@@ -1025,80 +985,80 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: space.lg,
     gap: space.md,
+    ...shadow.card,
   },
-  hint: { color: colors.muted, lineHeight: 20 },
-  sectionTitle: {
-    fontSize: 11, fontWeight: "700", letterSpacing: 0.8,
-    color: colors.muted, textTransform: "uppercase",
-  },
+  hint: { ...type.small, lineHeight: 20 },
+  sectionTitle: { ...type.label },
 
   statusRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  status: { fontSize: 16, fontWeight: "600", color: colors.text, flex: 1 },
+  status: { fontSize: 16, fontWeight: "700", color: colors.text, flex: 1 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   dotIdle: { backgroundColor: colors.faint },
   dotLive: { backgroundColor: colors.ok },
   dotThinking: { backgroundColor: colors.warn },
-  dotSpeaking: { backgroundColor: colors.accent },
-
-  button: { paddingVertical: space.md, borderRadius: radius.sm, alignItems: "center" },
-  primary: { backgroundColor: colors.accent },
-  primaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  stop: { backgroundColor: colors.danger },
+  // Speaking must not be another green: listening and speaking are the two
+  // states a medic reads off this dot without looking at the label, and in
+  // a green app "green vs green" is no signal at all.
+  dotSpeaking: { backgroundColor: colors.info },
 
   draft: {
     flexDirection: "row", alignItems: "center", gap: space.sm,
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm,
-    padding: space.md,
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    paddingVertical: space.md, paddingHorizontal: space.md,
   },
   draftFailed: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
   draftReady: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  draftPressed: { backgroundColor: colors.bgDeep },
   draftFiledText: { color: colors.ok },
-  draftTitle: { color: colors.text, fontWeight: "600", fontSize: 14 },
+  draftTitle: { color: colors.text, fontWeight: "700", fontSize: 14 },
   draftMeta: { color: colors.muted, fontSize: 11 },
   draftAction: { color: colors.accent, fontWeight: "700", fontSize: 13 },
-  draftFiled: { color: colors.ok, fontWeight: "700", fontSize: 16 },
 
-  caption: { color: colors.muted, fontSize: 14, lineHeight: 20, fontStyle: "italic" },
-  thin: { color: colors.warn, fontSize: 12 },
-  waiting: { color: colors.faint, fontStyle: "italic" },
+  caption: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  thin: { color: colors.warn, fontSize: 12, lineHeight: 18 },
+  waiting: { color: colors.faint, fontStyle: "italic", lineHeight: 20 },
 
   boundary: {
     backgroundColor: colors.accentSoft,
     borderRadius: radius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
     padding: space.md,
+    gap: space.xs,
   },
+  boundaryTitle: { color: colors.accent, fontWeight: "700", fontSize: 14 },
   boundaryText: { color: colors.text, fontSize: 13, lineHeight: 19 },
 
-  asked: { color: colors.muted, fontSize: 13, fontStyle: "italic" },
+  asked: {
+    color: colors.muted, fontSize: 13, fontStyle: "italic", lineHeight: 19,
+  },
   answer: { color: colors.text, fontSize: 16, lineHeight: 24 },
 
-  flag: { borderWidth: 1, borderRadius: radius.sm, padding: space.md, gap: space.xs },
-  flagTitle: { fontWeight: "700", fontSize: 13 },
+  flag: { borderWidth: 1, borderRadius: radius.md, padding: space.md, gap: space.xs },
+  flagTitle: { fontWeight: "700", fontSize: 13, textTransform: "capitalize" },
   flagNote: { color: colors.text, fontSize: 13, lineHeight: 19 },
   basis: { color: colors.muted, fontSize: 11 },
 
   spoken: {
-    backgroundColor: colors.okSoft, borderRadius: radius.sm,
+    backgroundColor: colors.infoSoft, borderRadius: radius.md,
     padding: space.md, gap: space.xs,
   },
-  spokenText: { color: colors.text, fontSize: 16 },
+  spokenText: { color: colors.text, fontSize: 17, lineHeight: 24 },
   spokenEnglish: { color: colors.muted, fontSize: 12, fontStyle: "italic" },
 
   source: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm,
-    padding: space.sm, gap: 2,
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    padding: space.md, gap: 2,
   },
-  sourceTitle: { color: colors.text, fontWeight: "600", fontSize: 14 },
-  sourceMeta: { color: colors.muted, fontSize: 11 },
+  sourcePressed: { backgroundColor: colors.bgDeep },
+  sourceTitle: { color: colors.text, fontWeight: "700", fontSize: 14 },
+  sourceMeta: { color: colors.muted, fontSize: 11, lineHeight: 16 },
   matched: { color: colors.accent, fontSize: 11 },
-
-  error: {
-    color: colors.danger, backgroundColor: colors.dangerSoft,
-    padding: space.md, borderRadius: radius.sm,
-  },
 });
