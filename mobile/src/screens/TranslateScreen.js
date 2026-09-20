@@ -85,16 +85,35 @@ export default function TranslateScreen({ encounterId }) {
   // previous clip is still held open plays the old audio.
   async function speak(base64Mp3, key) {
     if (!base64Mp3) return;
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-    const file = new File(Paths.cache, `ems-tts-${key}.mp3`);
-    if (file.exists) file.delete();
-    file.create();
-    file.write(base64Mp3, { encoding: "base64" });
+    // Dropping out of playAndRecord is a nicety, not a precondition, so it
+    // is best-effort and failure is ignored. iOS refuses it with OSStatus
+    // 561017449 ('!pri', InsufficientPriority) whenever another screen
+    // still holds a recording session -- and audio plays perfectly well in
+    // playAndRecord, which is exactly how hands-free speaks while its
+    // microphone is open. Treating this as fatal is what made one leaked
+    // session silence the translator entirely.
+    // Deliberately NOT api/audioSession.releaseAudioSession(): that one
+    // retries for up to ~1.5s, which is right when a screen is handing the
+    // session back and wrong here, where it would stall every spoken
+    // translation behind it. One attempt, then play.
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true })
+      .catch(() => { /* another screen holds the session; play anyway */ });
 
-    playerRef.current?.remove();
-    const player = createAudioPlayer(file.uri);
-    playerRef.current = player;
-    player.play();
+    // The playback itself must still not reject -- this is called straight
+    // from a Pressable on the replay button.
+    try {
+      const file = new File(Paths.cache, `ems-tts-${key}.mp3`);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(base64Mp3, { encoding: "base64" });
+
+      playerRef.current?.remove();
+      const player = createAudioPlayer(file.uri);
+      playerRef.current = player;
+      player.play();
+    } catch (e) {
+      setError(`Could not play that aloud: ${e.message}`);
+    }
   }
 
   /** Translate one utterance and push it onto the conversation. */
@@ -122,7 +141,16 @@ export default function TranslateScreen({ encounterId }) {
   async function toggleRecording() {
     setError(null);
     if (capture.isBusy) {
-      const { transcript } = await capture.stop();
+      // Guarded because this is an onPress handler: an unhandled rejection
+      // here shows up as a red box with no context rather than as an error
+      // on screen.
+      let transcript = "";
+      try {
+        ({ transcript } = await capture.stop());
+      } catch (e) {
+        setError(e.message);
+        return;
+      }
       setLive("");
       setLiveLang(null);
       if (!transcript) {

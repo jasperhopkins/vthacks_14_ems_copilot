@@ -48,6 +48,7 @@ import {
 } from "expo-audio";
 import { File, Paths } from "expo-file-system";
 import { api } from "../api/client";
+import { enterPlaybackSession, releaseAudioSession } from "../api/audioSession";
 import { openTranscribeStream } from "../api/transcribeStream";
 import { downmixInt16 } from "../api/micStream";
 import { colors, radius, space, severityStyle, formatTimestamp } from "../theme";
@@ -71,6 +72,27 @@ const PLAYBACK_GRACE_MS = 1500;
 // Absolute ceiling on how long the microphone may be muted, whatever else
 // goes wrong. A latched mute is indistinguishable from a broken assistant.
 const MAX_MUTE_MS = 45000;
+
+// How long to keep listening after a phrase settles before deciding the
+// medic has finished talking. Transcribe settles a result at any natural
+// pause -- drawing breath mid-sentence, or thinking -- so dispatching on
+// the first settled segment answers half a question. Every further segment
+// that lands inside this window is appended and the clock restarts.
+// This is the dial to turn if Copilot cuts in too early or feels sluggish.
+const UTTERANCE_SETTLE_MS = 1500;
+
+// However many continuations arrive, stop growing one request after this.
+// Without it a cab with continuous speech in it -- the partner, the radio,
+// the patient -- keeps re-arming the settle timer, and what finally
+// reaches Copilot is a paragraph of clinical narration with "write that
+// up" buried in it, which it quite reasonably answers as a protocol
+// question instead of doing the paperwork.
+const UTTERANCE_MAX_MS = 6000;
+
+// A dropped Transcribe socket is reopened rather than surfaced as a dead
+// session. Sessions do not last a whole shift on their own: the far end
+// closes an idle stream, and a long call will hit that.
+const RECONNECT_DELAYS_MS = [500, 1500, 4000];
 
 // Dialogue turns replayed into the next request. The backend caps this too.
 const HISTORY_TURNS = 8;
@@ -99,7 +121,23 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   const preRollRef = useRef([]);
   const playerRef = useRef(null);
   const subscriptionRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const sampleRateRef = useRef(null);
   const unmountedRef = useRef(false);
+  // Speech heard since the last dispatch, and the timer deciding when the
+  // medic has actually stopped talking. See UTTERANCE_SETTLE_MS.
+  const pendingUtteranceRef = useRef("");
+  const utteranceTimerRef = useRef(null);
+  const utteranceStartedAtRef = useRef(0);
+  // Set while the screen is handing the audio session back. speak()'s
+  // cleanup checks it before restarting the microphone: without it, a
+  // reply finishing just as the medic navigates away puts the session
+  // straight back into `.record` *after* the release ran, and the
+  // translator is mute again. This is the long-session failure.
+  const tearingDownRef = useRef(false);
+  // Lets the on-screen Stop button end playback early.
+  const stopPlaybackRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
 
   // The encounter the *next* turn belongs to. A ref rather than state
   // because it rolls mid-session (every draft starts a new report) and the
@@ -119,6 +157,10 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // Set when the medic said "Copilot" and nothing else -- the next thing
   // they say is the command.
   const awaitingCommandRef = useRef(false);
+  // Set just before navigating somewhere that is still "inside" the
+  // hands-free session (reviewing a draft, reading a cited guideline), so
+  // the blur handler below leaves the microphone alone. See releaseAudio.
+  const keepAliveRef = useRef(false);
 
   const handleBuffer = useCallback((buffer) => {
     const pcm = downmixInt16(buffer.data, buffer.channels || 1);
@@ -138,12 +180,20 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     onBuffer: handleBuffer,
   });
 
+  // Unmount, not just blur. Backing out of this screen *pops* it, so the
+  // blur handler below is not the only exit -- and a cleanup that stops
+  // the stream without dropping the audio session leaves the whole app in
+  // playAndRecord, which is what silenced the translator.
   useEffect(() => () => {
     unmountedRef.current = true;
+    tearingDownRef.current = true;
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
     try { stream.stop(); } catch { /* already stopped */ }
     sessionRef.current?.abort();
     try { subscriptionRef.current?.remove(); } catch { /* none */ }
+    if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
     playerRef.current?.remove();
+    releaseAudioSession();
   }, [stream]);
 
   // ------------------------------------------------------------------
@@ -151,22 +201,14 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // ------------------------------------------------------------------
 
   /**
-   * Play one reply, and resolve once the microphone is live again.
+   * Play one audio clip. Resolves when it finishes, fails, or never loads.
    *
-   * Two things here are load-bearing, and both were bugs first.
-   *
-   * `play()` is called again once the player reports `isLoaded`. Calling
-   * it immediately after `createAudioPlayer` happens to work for a
-   * one-line translation and silently does nothing for a 180 KB protocol
-   * answer -- which is why spoken answers worked everywhere except the
-   * long ones, i.e. exactly the contraindication questions.
-   *
-   * And every exit path unmutes, exactly once. The mute used to be lifted
-   * only by `didJustFinish`, so a clip that never loaded left the
-   * microphone fed silence until a 30-second backstop -- an assistant that
-   * had simply stopped answering.
+   * `play()` is called both immediately and again once the player reports
+   * `isLoaded`: the immediate call starts short clips without waiting for
+   * a status round trip, and the second is what actually starts a large
+   * one, which is not ready on the line after `createAudioPlayer`.
    */
-  const speak = useCallback((base64Mp3, key) => new Promise((resolve) => {
+  const playClip = useCallback((uri) => new Promise((resolve) => {
     let settled = false;
     let guard = null;
 
@@ -176,40 +218,20 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       if (guard) clearTimeout(guard);
       try { subscriptionRef.current?.remove(); } catch { /* already gone */ }
       subscriptionRef.current = null;
-      // Let the speaker ring out before the mic is live again, or the tail
-      // comes back as a phantom utterance.
-      setTimeout(() => {
-        mutedRef.current = false;
-        resolve();
-      }, UNMUTE_DELAY_MS);
-    };
-
-    if (!base64Mp3) { mutedRef.current = false; resolve(); return; }
-
-    let file;
-    try {
-      // Each clip gets its own filename: overwriting one while the
-      // previous is still open plays the old audio.
-      file = new File(Paths.cache, `ems-agent-${key}.mp3`);
-      if (file.exists) file.delete();
-      file.create();
-      file.write(base64Mp3, { encoding: "base64" });
-    } catch {
-      // Losing the audio must not lose the answer -- it is on screen.
-      mutedRef.current = false;
+      stopPlaybackRef.current = null;
       resolve();
-      return;
-    }
-
-    mutedRef.current = true;
-    try { subscriptionRef.current?.remove(); } catch { /* none */ }
-    playerRef.current?.remove();
+    };
+    stopPlaybackRef.current = () => {
+      try { playerRef.current?.pause(); } catch { /* already stopped */ }
+      finish();
+    };
 
     let player;
     try {
-      player = createAudioPlayer(file.uri);
+      try { subscriptionRef.current?.remove(); } catch { /* none */ }
+      playerRef.current?.remove();
+      player = createAudioPlayer(uri);
     } catch {
-      mutedRef.current = false;
       resolve();
       return;
     }
@@ -224,22 +246,102 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       if (status.isLoaded && !started) {
         started = true;
         clearTimeout(guard);
-        // The duration is only real once the source has loaded, so the
-        // wait is bounded on the actual clip rather than a flat guess.
-        const ms = Math.min(
-          (status.duration || 0) * 1000 + PLAYBACK_GRACE_MS,
-          MAX_MUTE_MS
+        // Duration is only real once loaded, so the wait is bounded on the
+        // actual clip rather than a flat guess.
+        guard = setTimeout(
+          finish,
+          Math.min((status.duration || 0) * 1000 + PLAYBACK_GRACE_MS, MAX_MUTE_MS)
         );
-        guard = setTimeout(finish, ms);
-        try { player.play(); } catch { finish(); return; }
+        try { player.play(); } catch { finish(); }
       }
       if (status.didJustFinish) finish();
     });
 
-    // Harmless when the source is not ready yet, and it is what makes
-    // short clips start without waiting for a status round trip.
     try { player.play(); } catch { /* the isLoaded branch will retry */ }
   }), []);
+
+  /** 100ms of 16 kHz mono silence, so a paused microphone does not read to
+   *  Amazon Transcribe as a dead stream. */
+  const startSilenceKeepAlive = useCallback(() => {
+    if (silenceTimerRef.current) return;
+    silenceTimerRef.current = setInterval(() => {
+      sessionRef.current?.sendAudio(new Int16Array(SAMPLE_RATE / 10).buffer);
+    }, 100);
+  }, []);
+
+  const stopSilenceKeepAlive = useCallback(() => {
+    if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+  }, []);
+
+  /**
+   * Speak one reply, audibly.
+   *
+   * The microphone has to be stopped first, and that is not an
+   * optimisation -- it is the only way the reply is heard at all.
+   * expo-audio's `AudioStream.start()` does
+   *
+   *     try session.setCategory(.record, mode: .measurement)
+   *
+   * (node_modules/expo-audio/ios/AudioStream.swift), clobbering whatever
+   * `setAudioModeAsync` set. `.record` is a capture-ONLY category: nothing
+   * played under it is audible. So while the stream ran, every spoken
+   * answer was rendered, written to disk, played without error, and
+   * silent. `AudioStream.stop()` then calls `setActive(false)` and never
+   * restores the category, which is what left the rest of the app -- the
+   * translator, most visibly -- mute afterwards.
+   *
+   * Hence: stop the microphone, take a `.playback` session, play, then
+   * bring the microphone back. The Transcribe socket stays open across
+   * the gap on synthetic silence, because a stream that simply stops
+   * sending frames gets dropped at the far end.
+   */
+  const speak = useCallback(async (base64Mp3, key) => {
+    if (!base64Mp3) return;
+
+    let file;
+    try {
+      // Each clip gets its own filename: overwriting one while the
+      // previous is still open plays the old audio.
+      file = new File(Paths.cache, `ems-agent-${key}.mp3`);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(base64Mp3, { encoding: "base64" });
+    } catch {
+      return;   // losing the audio must not lose the answer -- it is on screen
+    }
+
+    const wasListening = !!sessionRef.current;
+    mutedRef.current = true;
+    try {
+      try { stream.stop(); } catch { /* not started */ }
+      if (wasListening) startSilenceKeepAlive();
+      await enterPlaybackSession();
+      await playClip(file.uri);
+    } finally {
+      stopSilenceKeepAlive();
+      // Let the speaker ring out before the microphone is live again, or
+      // the tail comes back as a phantom utterance.
+      await new Promise((r) => setTimeout(r, UNMUTE_DELAY_MS));
+      if (wasListening && !unmountedRef.current && !tearingDownRef.current) {
+        try {
+          await stream.start();
+          // The sample rate is baked into the signed WebSocket URL, so a
+          // different one after the restart produces garbled text rather
+          // than an error. Has not been observed; worth knowing if it is.
+          const rate = stream.sampleRate;
+          if (rate && sampleRateRef.current && rate !== sampleRateRef.current) {
+            console.warn(
+              `[audio] mic restarted at ${rate} Hz, stream signed for ${sampleRateRef.current} Hz`
+            );
+          }
+        } catch (e) {
+          setError(`The microphone did not come back: ${e.message}`);
+        }
+      }
+      mutedRef.current = false;
+    }
+  }, [stream, playClip, startSilenceKeepAlive, stopSilenceKeepAlive]);
 
   // ------------------------------------------------------------------
   // Drafts, buffered in the background
@@ -292,6 +394,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // Coming back from the review screen: a draft may have been filed, or
   // may have finished while we were away.
   useEffect(() => navigation?.addListener?.("focus", () => {
+    keepAliveRef.current = false;
     for (const draft of drafts) {
       if (draft.status !== "failed") refreshDraft(draft.encounterId);
     }
@@ -356,6 +459,30 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // Deciding whether a finished sentence was meant for us
   // ------------------------------------------------------------------
 
+  /** Send whatever has accumulated, once the medic has stopped talking. */
+  const flushUtterance = useCallback(() => {
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+    utteranceTimerRef.current = null;
+    const utterance = pendingUtteranceRef.current.trim();
+    pendingUtteranceRef.current = "";
+    utteranceStartedAtRef.current = 0;
+    setAwaiting(false);
+    if (!utterance || busyRef.current) return;
+    dispatch(utterance);
+  }, [dispatch]);
+
+  /** Start or extend the "are they finished?" window, up to the cap. */
+  const armUtteranceTimer = useCallback(() => {
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+    if (!utteranceStartedAtRef.current) utteranceStartedAtRef.current = Date.now();
+    const spent = Date.now() - utteranceStartedAtRef.current;
+    if (spent >= UTTERANCE_MAX_MS) { flushUtterance(); return; }
+    utteranceTimerRef.current = setTimeout(
+      flushUtterance,
+      Math.min(UTTERANCE_SETTLE_MS, UTTERANCE_MAX_MS - spent)
+    );
+  }, [flushUtterance]);
+
   const onSettled = useCallback((text) => {
     const segment = (text || "").trim();
     if (!segment) return;
@@ -364,14 +491,48 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     // not belong in the patient's narrative.
     if (mutedRef.current) return;
 
+    // Already collecting a command: everything that lands inside the
+    // window is part of the same request, wake word or not. Transcribe
+    // settles a segment at any natural pause, so "Copilot, what's the dose
+    // for..." and "...a 40 kilo kid" arrive separately and are one
+    // question.
+    if (pendingUtteranceRef.current) {
+      const more = commandAfterWake(segment);
+      // Everything heard is still narration for the report. Forgetting to
+      // record continuations here quietly thinned every PCR drafted after
+      // a multi-segment question.
+      transcriptRef.current = `${transcriptRef.current} ${segment}`.trim();
+      if (more === null) {
+        pendingUtteranceRef.current = `${pendingUtteranceRef.current} ${segment}`.trim();
+        armUtteranceTimer();
+        return;
+      }
+      // They said "Copilot" again: this is a new request, not a
+      // continuation of the last one. Send what we had and start over.
+      const previous = pendingUtteranceRef.current;
+      pendingUtteranceRef.current = "";
+      utteranceStartedAtRef.current = 0;
+      if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+      utteranceTimerRef.current = null;
+      if (previous && !busyRef.current) dispatch(previous);
+      if (more) {
+        pendingUtteranceRef.current = more;
+        armUtteranceTimer();
+      } else {
+        awaitingCommandRef.current = true;
+        setAwaiting(true);
+      }
+      return;
+    }
+
     const command = commandAfterWake(segment);
 
     if (awaitingCommandRef.current && command === null) {
       // They said "Copilot" last time and this is the follow-up.
       awaitingCommandRef.current = false;
-      setAwaiting(false);
       transcriptRef.current = `${transcriptRef.current} ${segment}`.trim();
-      if (!busyRef.current) dispatch(segment);
+      pendingUtteranceRef.current = segment;
+      armUtteranceTimer();
       return;
     }
 
@@ -386,8 +547,10 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       return;
     }
     if (busyRef.current) return;   // still answering the last one
-    dispatch(command);
-  }, [dispatch]);
+    pendingUtteranceRef.current = command;
+    setAwaiting(true);
+    armUtteranceTimer();
+  }, [armUtteranceTimer, dispatch]);
 
   // `onSettled` is handed to the stream once, at open, so it closes over
   // the first render's callback. A ref keeps the stream calling the
@@ -399,6 +562,65 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
   // Session lifecycle
   // ------------------------------------------------------------------
 
+  /** Open a Transcribe socket against the already-running microphone. */
+  const openSession = useCallback(async () => {
+    const session = await openTranscribeStream({
+      sampleRate: sampleRateRef.current || SAMPLE_RATE,
+      onUpdate: ({ transcript }) => {
+        if (!unmountedRef.current) setHeard(transcript);
+      },
+      onSettled: (text) => onSettledRef.current(text),
+      onError: (e) => { reconnectRef.current?.(e); },
+    });
+    await session.ready;
+    if (unmountedRef.current) { session.abort(); return; }
+
+    sessionRef.current = session;
+    for (const pcm of preRollRef.current) session.sendAudio(pcm);
+    preRollRef.current = [];
+  }, []);
+
+  /**
+   * Put the transcription stream back after the far end drops it.
+   *
+   * Amazon Transcribe closes a streaming session that goes quiet, and a
+   * long call will hit that -- so a dead socket is an expected state, not
+   * an error to show the medic. Before this, the stream simply stopped
+   * producing transcripts: the microphone light stayed on, the status line
+   * still said "Listening", and nothing was heard again for the rest of
+   * the call. That is the "unresponsive after a while" failure.
+   */
+  const reconnect = useCallback(async (cause) => {
+    if (unmountedRef.current || tearingDownRef.current) return;
+    const attempt = reconnectAttemptRef.current;
+    if (attempt >= RECONNECT_DELAYS_MS.length) {
+      setError(`Transcription stopped and could not be restarted: ${cause?.message || cause}`);
+      setPhase("idle");
+      return;
+    }
+    reconnectAttemptRef.current = attempt + 1;
+
+    sessionRef.current?.abort();
+    sessionRef.current = null;
+    setPhase("connecting");
+    await new Promise((r) => setTimeout(r, RECONNECT_DELAYS_MS[attempt]));
+    if (unmountedRef.current || tearingDownRef.current) return;
+    try {
+      await openSession();
+      if (unmountedRef.current) return;
+      reconnectAttemptRef.current = 0;
+      setError(null);
+      setPhase("listening");
+    } catch (e) {
+      reconnect(e);
+    }
+  }, [openSession]);
+
+  // The stream's onError closes over the first render, so it calls through
+  // a ref -- same reason as onSettledRef.
+  const reconnectRef = useRef(reconnect);
+  useEffect(() => { reconnectRef.current = reconnect; }, [reconnect]);
+
   async function start() {
     setError(null);
     setTurns([]);
@@ -409,6 +631,9 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     mutedRef.current = false;
     busyRef.current = false;
     awaitingCommandRef.current = false;
+    tearingDownRef.current = false;
+    pendingUtteranceRef.current = "";
+    reconnectAttemptRef.current = 0;
     setAwaiting(false);
 
     // A fresh encounter per session, same convention as the recorder --
@@ -428,30 +653,38 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
       // Sample rate is only real once the hardware is open, and it gets
       // signed into the URL -- a mismatch produces garbled text, not an error.
       await stream.start();
-      const session = await openTranscribeStream({
-        sampleRate: stream.sampleRate || SAMPLE_RATE,
-        onUpdate: ({ transcript }) => {
-          if (!unmountedRef.current) setHeard(transcript);
-        },
-        onSettled: (text) => onSettledRef.current(text),
-        onError: (e) => { if (!unmountedRef.current) setError(e.message); },
-      });
-      await session.ready;
-      if (unmountedRef.current) { session.abort(); return; }
-
-      sessionRef.current = session;
-      for (const pcm of preRollRef.current) session.sendAudio(pcm);
-      preRollRef.current = [];
+      sampleRateRef.current = stream.sampleRate || SAMPLE_RATE;
+      await openSession();
+      if (unmountedRef.current) return;
+      reconnectAttemptRef.current = 0;
       setPhase("listening");
     } catch (e) {
       try { stream.stop(); } catch { /* not started */ }
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      await releaseAudioSession();
       setError(e.message);
       setPhase("idle");
     }
   }
 
-  async function stop() {
+  /**
+   * Hand the microphone and the iOS audio session back.
+   *
+   * This is not just tidiness. `setAudioModeAsync({allowsRecording: true})`
+   * puts the session in `playAndRecord` for the whole app, and a stack
+   * navigator keeps this screen mounted after you navigate away -- so a
+   * session left running here made every later `setAudioModeAsync` in the
+   * app fail with OSStatus 561017449 ('!pri',
+   * AVAudioSessionErrorCodeInsufficientPriority) and killed playback
+   * everywhere, most visibly in the translator.
+   */
+  const releaseAudio = useCallback(async () => {
+    // Set first: speak()'s cleanup checks this before restarting the
+    // microphone, and a reply landing mid-teardown would otherwise put the
+    // session back into `.record` after the release.
+    tearingDownRef.current = true;
+    if (utteranceTimerRef.current) clearTimeout(utteranceTimerRef.current);
+    utteranceTimerRef.current = null;
+    pendingUtteranceRef.current = "";
     try { stream.stop(); } catch { /* already stopped */ }
     const session = sessionRef.current;
     sessionRef.current = null;
@@ -460,10 +693,39 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
     subscriptionRef.current = null;
     playerRef.current?.remove();
     playerRef.current = null;
+    if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
+    silenceTimerRef.current = null;
     mutedRef.current = false;
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+    busyRef.current = false;
+    awaitingCommandRef.current = false;
+    await releaseAudioSession();
+  }, [stream]);
+
+  async function stop() {
+    await releaseAudio();
     setPhase("idle");
+    setAwaiting(false);
   }
+
+  /** Navigate without ending the session -- for screens that belong to the
+   *  call and play no audio of their own. */
+  function navigateKeepingSession(name, params) {
+    keepAliveRef.current = true;
+    navigation?.navigate(name, params);
+  }
+
+  // Leaving for another feature ends hands-free, because two screens cannot
+  // both own the audio session. Reviewing a draft or opening a cited
+  // guideline does not -- that is still this call, and the assistant keeps
+  // listening underneath.
+  useEffect(() => navigation?.addListener?.("blur", () => {
+    if (keepAliveRef.current) return;
+    releaseAudio().catch(() => {});
+    if (!unmountedRef.current) {
+      setPhase("idle");
+      setAwaiting(false);
+    }
+  }), [navigation, releaseAudio]);
 
   const live = phase !== "idle" && phase !== "connecting";
   const unfiled = drafts.filter((d) => d.status !== "filed").length;
@@ -484,9 +746,23 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
             </Pressable>
           </>
         ) : (
-          <Pressable style={[styles.button, styles.stop]} onPress={stop}>
-            <Text style={styles.primaryText}>End hands-free</Text>
-          </Pressable>
+          <>
+            {phase === "speaking" && (
+              // Manual barge-in. Automatic barge-in is not possible here:
+              // hearing the medic over the reply needs the microphone open
+              // during playback, and without echo cancellation the only
+              // thing it reliably hears is Copilot itself.
+              <Pressable
+                style={[styles.button, styles.secondary]}
+                onPress={() => stopPlaybackRef.current?.()}
+              >
+                <Text style={styles.secondaryText}>Stop talking — I'll speak</Text>
+              </Pressable>
+            )}
+            <Pressable style={[styles.button, styles.stop]} onPress={stop}>
+              <Text style={styles.primaryText}>End hands-free</Text>
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -499,7 +775,7 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
             <DraftRow
               key={draft.encounterId}
               draft={draft}
-              onPress={() => navigation?.navigate("PcrReview", { encounterId: draft.encounterId })}
+              onPress={() => navigateKeepingSession("PcrReview", { encounterId: draft.encounterId })}
             />
           ))}
         </View>
@@ -527,7 +803,9 @@ export default function CopilotScreen({ encounterId: baseEncounterId, navigation
         </View>
       )}
 
-      {turns.map((turn) => <Turn key={turn.id} turn={turn} navigation={navigation} />)}
+      {turns.map((turn) => (
+        <Turn key={turn.id} turn={turn} onOpenProtocol={navigateKeepingSession} />
+      ))}
     </ScrollView>
   );
 }
@@ -536,7 +814,7 @@ function StatusLine({ phase, awaiting }) {
   const label = {
     idle: "Off",
     connecting: "Connecting…",
-    listening: awaiting ? "Go ahead…" : "Listening for “Copilot”",
+    listening: awaiting ? "Still listening — take your time…" : "Listening for “Copilot”",
     thinking: "Thinking…",
     speaking: "Speaking",
   }[phase];
@@ -554,35 +832,52 @@ function StatusLine({ phase, awaiting }) {
   );
 }
 
-/** One buffered draft. Only a ready one opens -- tapping a report that is
- *  still being written would just show an empty document. */
+/** One buffered draft.
+ *
+ *  Every row opens, whatever its state. A row that refuses to respond
+ *  reads as a broken list, and the review screen already handles a draft
+ *  that is still being written or has failed -- it says so and offers a
+ *  retry, which is more useful than a dead tap.
+ */
 function DraftRow({ draft, onPress }) {
   const complaint = draft.pcr?.chief_complaint;
   const flagCount = (draft.flags || []).length;
-  const ready = draft.status === "ready";
 
-  const meta = {
+  const title = {
     pending: "Writing it up…",
-    ready: complaint || "Draft ready",
-    filed: "Filed",
-    failed: draft.error || "Failed",
+    ready: complaint || "Draft ready to review",
+    filed: complaint || "Filed",
+    failed: draft.error || "Extraction failed",
+  }[draft.status];
+
+  const action = {
+    pending: "Open →",
+    ready: "Review & file →",
+    filed: "View →",
+    failed: "Retry →",
   }[draft.status];
 
   return (
     <Pressable
-      style={[styles.draft, draft.status === "failed" && styles.draftFailed]}
-      onPress={ready ? onPress : undefined}
+      style={[
+        styles.draft,
+        draft.status === "failed" && styles.draftFailed,
+        draft.status === "ready" && styles.draftReady,
+      ]}
+      onPress={onPress}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.draftTitle} numberOfLines={1}>{meta}</Text>
+        <Text style={styles.draftTitle} numberOfLines={1}>{title}</Text>
         <Text style={styles.draftMeta}>
           {formatTimestamp(draft.at)}
           {flagCount ? ` · ${flagCount} interaction flag${flagCount > 1 ? "s" : ""}` : ""}
+          {draft.status === "filed" ? " · filed" : ""}
         </Text>
       </View>
       {draft.status === "pending" && <ActivityIndicator size="small" />}
-      {ready && <Text style={styles.draftAction}>Review →</Text>}
-      {draft.status === "filed" && <Text style={styles.draftFiled}>✓</Text>}
+      <Text style={[styles.draftAction, draft.status === "filed" && styles.draftFiledText]}>
+        {action}
+      </Text>
     </Pressable>
   );
 }
@@ -593,7 +888,7 @@ function DraftRow({ draft, onPress }) {
  *  cannot check -- so every protocol the answer drew on is rendered here
  *  with its document, version and page, and opens in full on tap.
  */
-function Turn({ turn, navigation }) {
+function Turn({ turn, onOpenProtocol }) {
   const protocols = (turn.sources || []).filter((s) => s.kind === "protocol");
   const drugs = (turn.sources || []).filter((s) => s.kind === "drug");
   const spoken = turn.spoken_to_patient;
@@ -631,7 +926,7 @@ function Turn({ turn, navigation }) {
             <Pressable
               key={p.protocol_id}
               style={styles.source}
-              onPress={() => navigation?.navigate("ProtocolDetail", {
+              onPress={() => onOpenProtocol("ProtocolDetail", {
                 protocolId: p.protocol_id, title: p.title,
               })}
             >
@@ -694,6 +989,8 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   draftFailed: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  draftReady: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  draftFiledText: { color: colors.ok },
   draftTitle: { color: colors.text, fontWeight: "600", fontSize: 14 },
   draftMeta: { color: colors.muted, fontSize: 11 },
   draftAction: { color: colors.accent, fontWeight: "700", fontSize: 13 },

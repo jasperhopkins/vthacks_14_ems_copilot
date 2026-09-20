@@ -539,7 +539,15 @@ _REGISTRY = [
         description=(
             "Start writing up this call as a patient care report from everything said "
             "so far. Produces a DRAFT for the medic to review; it does NOT file "
-            "anything. Use when the medic asks you to write it up."
+            "anything.\n"
+            "Call this whenever the medic asks for the paperwork in ANY words: write "
+            "it up, write up the report, transcribe a PCR, transcribe this patient, "
+            "document this call, chart it, make a report, do the PCR, start the "
+            "paperwork. 'Transcribe' and 'document' mean this tool -- they do not "
+            "mean reading something back.\n"
+            "Call it even when the medic describes the patient in the same breath "
+            "('transcribe a PCR, 58 year old male with a bee sting'). That "
+            "description is material for the report, not a question to look up."
         ),
         schema={"type": "object", "properties": {}},
         run=_draft_pcr_from_transcript,

@@ -16,6 +16,7 @@ import {
   setAudioModeAsync,
 } from "expo-audio";
 import { openTranscribeStream } from "./transcribeStream";
+import { releaseAudioSession } from "./audioSession";
 
 export const SAMPLE_RATE = 16000;
 
@@ -101,8 +102,7 @@ export function useVoiceCapture({ onUpdate, onError } = {}) {
         setStatus("listening");
       } catch (e) {
         try { stream.stop(); } catch { /* not started */ }
-        await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true })
-          .catch(() => {});
+        await releaseAudioSession();
         setStatus("idle");
         throw e;
       }
@@ -118,9 +118,10 @@ export function useVoiceCapture({ onUpdate, onError } = {}) {
     if (!session) return { transcript: "", languageCode: null };
     const transcript = await session.finish();
     // Playback has to wait for the recording mode to be released, or the
-    // Polly reply plays through the earpiece at a whisper on iOS.
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true })
-      .catch(() => {});
+    // Polly reply plays through the earpiece at a whisper on iOS. Retried,
+    // because the native capture graph outlives stream.stop() by a moment
+    // and refuses the change until it is gone.
+    await releaseAudioSession();
     return { transcript, languageCode: session.languageCode };
   }, [stream]);
 

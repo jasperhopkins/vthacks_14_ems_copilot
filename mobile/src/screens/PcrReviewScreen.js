@@ -18,7 +18,7 @@ import { colors, radius, space } from "../theme";
 
 export default function PcrReviewScreen({ route, navigation }) {
   const encounterId = route.params?.encounterId;
-  const [phase, setPhase] = useState("loading"); // loading | review | saving | saved | error
+  const [phase, setPhase] = useState("loading"); // loading | writing | review | saving | saved | error
   const [draft, setDraft] = useState(null);
   const [flags, setFlags] = useState([]);
   const [crewNotes, setCrewNotes] = useState("");
@@ -33,8 +33,9 @@ export default function PcrReviewScreen({ route, navigation }) {
         return;
       }
       if (!res.pcr) {
-        setError("This draft is still being written. Give it a few seconds.");
-        setPhase("error");
+        // Still extracting. Drafts are openable the moment Copilot starts
+        // one, so landing here is normal, not an error -- wait for it.
+        setPhase("writing");
         return;
       }
       setDraft(res.pcr);
@@ -48,6 +49,14 @@ export default function PcrReviewScreen({ route, navigation }) {
   }, [encounterId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Poll while the draft is still being written, so opening one early
+  // turns into the editable document by itself.
+  useEffect(() => {
+    if (phase !== "writing") return undefined;
+    const id = setInterval(load, 2500);
+    return () => clearInterval(id);
+  }, [phase, load]);
 
   async function commit() {
     setPhase("saving");
@@ -76,11 +85,15 @@ export default function PcrReviewScreen({ route, navigation }) {
     );
   }
 
-  if (phase === "loading") {
+  if (phase === "loading" || phase === "writing") {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator size="large" />
-        <Text style={styles.hint}>Loading the draft…</Text>
+        <Text style={styles.hint}>
+          {phase === "writing"
+            ? "Copilot is still writing this one up. It'll open here as soon as it's ready."
+            : "Loading the draft…"}
+        </Text>
       </View>
     );
   }
@@ -115,6 +128,11 @@ export default function PcrReviewScreen({ route, navigation }) {
           <Text style={styles.hint}>Encounter {encounterId}</Text>
           <Pressable style={[styles.button, styles.secondary]} onPress={() => navigation.goBack()}>
             <Text style={styles.secondaryText}>Back to Copilot</Text>
+          </Pressable>
+          {/* Re-filing overwrites in place; the audit trail, not the
+              encounters table, is what preserves who changed what. */}
+          <Pressable style={[styles.button, styles.secondary]} onPress={() => setPhase("review")}>
+            <Text style={styles.secondaryText}>Edit and re-file</Text>
           </Pressable>
         </View>
       )}

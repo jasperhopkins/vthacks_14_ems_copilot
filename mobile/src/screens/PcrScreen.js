@@ -25,6 +25,7 @@ import {
   setAudioModeAsync,
 } from "expo-audio";
 import { api } from "../api/client";
+import { releaseAudioSession } from "../api/audioSession";
 import { openTranscribeStream } from "../api/transcribeStream";
 import { downmixInt16 } from "../api/micStream";
 import PcrDocument from "../components/PcrDocument";
@@ -77,6 +78,10 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
     unmountedRef.current = true;
     try { stream.stop(); } catch { /* already stopped */ }
     sessionRef.current?.abort();
+    // Backing out pops this screen, so unmount -- not blur -- is the path
+    // most exits take. Stopping the stream without dropping the session
+    // leaves the whole app in playAndRecord.
+    releaseAudioSession();
   }, [stream]);
 
   useEffect(() => {
@@ -84,6 +89,20 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [phase]);
+
+  // Navigating away mid-recording used to leave the iOS audio session in
+  // playAndRecord for the whole app, because a stack navigator keeps this
+  // screen mounted. Every later setAudioModeAsync then failed with
+  // OSStatus 561017449 ('!pri', InsufficientPriority) and playback died
+  // app-wide. Same fix as CopilotScreen: hand the session back on blur.
+  useEffect(() => navigation?.addListener?.("blur", () => {
+    if (phase !== "recording" && phase !== "connecting") return;
+    try { stream.stop(); } catch { /* already stopped */ }
+    sessionRef.current?.abort();
+    sessionRef.current = null;
+    releaseAudioSession();
+    setPhase("idle");
+  }), [navigation, phase, stream]);
 
   async function startRecording() {
     setError(null);
@@ -135,7 +154,7 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
       setPhase("recording");
     } catch (e) {
       try { stream.stop(); } catch { /* not started */ }
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      await releaseAudioSession();
       setError(e.message);
       setPhase("idle");
     }
@@ -157,7 +176,7 @@ export default function PcrScreen({ encounterId: baseEncounterId, navigation }) 
     setPhase("extracting");
     try {
       try { stream.stop(); } catch { /* already stopped */ }
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      await releaseAudioSession();
 
       const session = sessionRef.current;
       sessionRef.current = null;

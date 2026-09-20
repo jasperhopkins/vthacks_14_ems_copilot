@@ -478,11 +478,98 @@ endpoint is a four-file change:
   mounted and listening, and it deliberately never calls
   `setAudioModeAsync` — releasing the mic there would silence the
   assistant for the rest of the call.
+- **The iOS audio session is app-wide, and a screen that takes it must
+  hand it back on blur.** `setAudioModeAsync({allowsRecording: true})` puts
+  the session in `playAndRecord` for the *whole app*, and a stack navigator
+  keeps a screen mounted after you navigate away from it. So hands-free
+  left the microphone live, and every later `setAudioModeAsync` anywhere in
+  the app failed with **OSStatus 561017449** — that is `'!pri'`,
+  `AVAudioSessionErrorCodeInsufficientPriority` — which killed playback
+  app-wide, most visibly in the translator. Decode these: they are
+  four-char codes, `bytes.fromhex(hex(code)[2:])`.
+  Both `CopilotScreen` and `PcrScreen` now release the session in a `blur`
+  listener. Copilot keeps it only for navigations that are still the same
+  call (`navigateKeepingSession` → the draft review and a cited guideline,
+  neither of which plays audio); anything else ends the session.
+  Release through **`src/api/audioSession.releaseAudioSession()`**, not a
+  bare `setAudioModeAsync`. `AudioStream.stop()` is synchronous in JS but
+  the native capture graph outlives it by a moment, so an immediate release
+  is itself refused with `!pri`; the helper retries with backoff and warns
+  if it never takes. Swallowing that one failure silently is what kept the
+  app in `playAndRecord`.
+  Release on **unmount as well as blur** — backing out pops the screen, so
+  unmount is the path most exits actually take, and a cleanup that stops
+  the stream without dropping the session is the bug.
+- **Playback must never depend on dropping to a playback-only session.**
+  Audio plays fine in `playAndRecord` — that is how hands-free speaks while
+  its microphone is open. `TranslateScreen.speak` attempts the mode change
+  once, ignores failure, and plays regardless; treating it as a
+  precondition is what turned one leaked session into a silent translator,
+  and wrapping it in a `try` that bails made it worse rather than better.
+- **Every `setAudioModeAsync` call needs a `.catch`, and every `onPress`
+  that awaits one needs a `try`.** It genuinely rejects when another screen
+  holds the session, and an unhandled rejection in a press handler surfaces
+  as a context-free red box — eight of them, in the case that found this.
+- **`useAudioStream` forces the session to `.record`, and nothing is
+  audible in it.** `AudioStream.start()` in expo-audio's iOS source does
+  `session.setCategory(.record, mode: .measurement)`, clobbering whatever
+  `setAudioModeAsync` just set. `.record` is capture-only: a clip played
+  under it is rendered, written, played without error, and **silent**. Its
+  `stop()` then calls `setActive(false)` and never restores the category,
+  which is what left the translator mute after a hands-free session.
+  So `CopilotScreen.speak()` stops the microphone, takes a `.playback`
+  session, plays, and restarts the microphone — that ordering is the only
+  reason a spoken reply is audible at all, not an optimisation. Read
+  `node_modules/expo-audio/ios/AudioStream.swift` before changing it.
+- **"Transcribe a PCR" is a write-up request, and the tool description has
+  to say so.** `draft_pcr_from_transcript` was described only as "write it
+  up", so a medic asking to *transcribe*, *document*, *chart* or *make a
+  report* got a protocol or drug lookup instead — the model matched the
+  clinical words in the sentence rather than the intent. The description
+  and the prompt now list the phrasings explicitly and say that a patient
+  description in the same breath is material for the report, not a
+  question. Ten phrasings verified routing to the tool; the three ordinary
+  lookups verified still not drafting. Re-check both sides if you touch
+  either wording.
+- **Copilot waits `UTTERANCE_SETTLE_MS` before answering, and that is the
+  dial to turn.** Transcribe settles a result at *any* natural pause — a
+  breath mid-sentence, a moment's thought — so dispatching on the first
+  settled segment answers half a question. Every further segment landing
+  inside the window is appended and the clock restarts, wake word or not.
+  Raise it if Copilot cuts in early, lower it if replies feel sluggish.
+  `UTTERANCE_MAX_MS` caps how far it can be extended: a cab with
+  continuous speech in it re-arms the timer indefinitely, and what reaches
+  Copilot is then a paragraph of narration with the request buried in it.
+  Continuations are appended to `transcriptRef` as well as to the pending
+  request — forgetting that quietly thinned every PCR drafted after a
+  multi-segment question. A continuation that contains the wake word is a
+  *new* request: the previous one is dispatched and collection restarts.
+- **Automatic barge-in is not implementable here, and the reason is echo,
+  not effort.** Hearing the medic over a reply needs the microphone open
+  during playback, which needs `.playAndRecord`; but there is no echo
+  cancellation on that path (`AudioStream` uses `mode: .measurement`, and
+  `setAudioModeAsync` uses `.default` — neither is `.voiceChat`), so the
+  only thing the microphone would reliably hear is Copilot itself. Any
+  energy threshold either triggers on its own voice or misses the medic.
+  There is a manual **Stop talking** control instead. Revisit only with a
+  dev build that can set `.voiceChat`.
+- **A dropped Transcribe socket reconnects rather than surfacing.** Amazon
+  Transcribe closes a stream that goes quiet, and a long call hits that —
+  before `reconnect()`, the symptom was a session that looked alive (mic
+  on, status "Listening") and never transcribed again. Reconnection keeps
+  the encounter, the transcript and the drafts.
+- **`tearingDownRef` guards the restart in `speak()`'s cleanup.** A reply
+  finishing just as the medic navigates away would otherwise call
+  `stream.start()` *after* the release ran, putting the session back into
+  `.record` and muting the translator — the "breaks again after a while"
+  failure, which is really "breaks after enough replies to lose the race".
+- **The Transcribe socket is kept alive on synthetic silence while the
+  microphone is down** (`startSilenceKeepAlive`, 100 ms of zeroed int16 at
+  the stream rate). A stream that simply stops sending frames gets dropped
+  at the far end, and the gap here is however long the reply takes to say.
 - **Play the reply only once the player reports `isLoaded`.** Calling
-  `play()` straight after `createAudioPlayer` works for a one-line
-  translation and silently does nothing for a ~180 KB answer — which is
-  why spoken replies worked everywhere except the long ones, i.e. exactly
-  the contraindication questions. `speak()` calls `play()` both
+  `play()` straight after `createAudioPlayer` works for a one-line clip
+  and does nothing for a ~180 KB one. `playClip()` calls `play()` both
   immediately (fast path for short clips) and again on `isLoaded`.
 - **Every exit path in `speak()` unmutes, exactly once.** The mute used to
   lift only on `didJustFinish`, so a clip that never loaded left the
