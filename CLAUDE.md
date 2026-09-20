@@ -86,12 +86,13 @@ time allows:**
 ## Commands
 
 There is no linter or CI. Offline tests cover the pure logic in the PCR
-pipeline only; everything else is verified by `sam build`, a deploy, and
-hitting the API with `curl` + a JWT (or the app).
+pipeline and protocol retrieval scoring; everything else is verified by
+`sam build`, a deploy, and hitting the API with `curl` + a JWT (or the app).
 
 ```bash
-python3 infra/tests/test_pcr_logic.py    # unit-ish, no AWS creds needed
-node mobile/tools/test_streaming.mjs     # event-stream codec + SigV4 presigner
+python3 infra/tests/test_pcr_logic.py       # unit-ish, no AWS creds needed
+python3 infra/tests/test_protocol_search.py # protocol ranking + seed data
+node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
 # it goes through Cognito SRP -> API Gateway -> Transcribe -> Bedrock ->
@@ -185,6 +186,7 @@ Expo app (Cognito-authenticated)
 | `infra/layers/common/python/common/responses.py` | Response formatting + pulling the Cognito user ID out of the JWT |
 | `infra/src/*/app.py` | The 4 feature handlers |
 | `infra/src/pcr/status.py` | PCR poll target: Bedrock extraction + drug cross-check |
+| `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
 | `infra/seed/*.json` | Demo drug/protocol data — **not clinically authoritative, labeled as such in the files**; includes alias rows for field slang |
 | `infra/tests/smoke_test_pcr.py` | End-to-end pipeline test against a live stack (Polly-generated audio, real SRP login) |
@@ -223,9 +225,14 @@ endpoint is a four-file change:
   that IAM gap is what makes it append-only. Only a SHA-256 `payload_hash`
   is stored, never the payload. Non-encounter actions pass
   `encounter_id="N/A"`.
-- **Protocols** — PK `protocol_id`. Retrieval is `scan(Limit=200)` plus
-  naive keyword scoring in `protocol/app.py`; fine at seed scale, first
-  thing to replace (Bedrock Knowledge Base / OpenSearch) if the table grows.
+- **Protocols** — PK `protocol_id`. Retrieval is `scan(Limit=200)` in
+  `protocol/app.py` plus token scoring in `protocol/search.py`; fine at seed
+  scale, first thing to replace (Bedrock Knowledge Base / OpenSearch) if the
+  table grows. Each record carries `symptoms` and `synonyms` — the phrasings
+  an EMT actually uses ("stung by a bee", "narcan", "pinpoint pupils") — and
+  they are **load-bearing for retrieval**: a protocol added without them is
+  invisible to any query that doesn't name it directly. They are retrieval
+  aids, *not* diagnostic criteria, and the prompt says so explicitly.
 - **DrugReference** — PK `drug_name`, **lowercase**. `_normalize_drug_name`
   runs Comprehend Medical `InferRxNorm` then lowercases, so seed keys must
   be lowercase or every lookup misses.

@@ -8,14 +8,17 @@ match -- it never free-generates a dosage from model knowledge alone. This
 keeps the liability story sane for a hackathon demo: the model's job is
 retrieval + phrasing, not clinical judgment.
 
+Retrieval scoring lives in `search.py`, which imports no boto3 so it can be
+tested offline (`infra/tests/test_protocol_search.py`).
+
 POST /protocol/query
   { "query": "epinephrine dose for anaphylaxis, adult", "patient_weight_kg": 80 }
 """
 import json
 import os
-import time
 import uuid
 import boto3
+import search
 from common.audit import log_audit_event
 from common.responses import ok, error, get_user_id
 
@@ -26,20 +29,36 @@ PROTOCOL_TABLE = os.environ.get("PROTOCOL_TABLE_NAME", "ems-copilot-protocols")
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "amazon.nova-pro-v1:0")
 protocol_table = dynamodb.Table(PROTOCOL_TABLE)
 
+NO_MATCH_ANSWER = (
+    "No protocol in the database matches that query. Do not treat this as "
+    "'nothing applies' -- it means this tool has nothing to offer here. "
+    "Consult your agency protocol directly or contact medical control."
+)
+
 ANSWER_PROMPT = """You are helping an EMT quickly find the right protocol \
-entry. You are given a small set of candidate protocol records (already \
-retrieved from the curated database -- do not use outside knowledge) and \
-the EMT's query. Pick the single best-matching record and answer concisely.
+entry. You are given the candidate protocol records that a keyword search \
+already retrieved from the curated database, and the EMT's query. Answer \
+only from these records.
 
 If patient weight is given and the matched record has a per-kg dosage \
 formula, compute the exact dose.
 
 Rules:
-- Only use information present in the candidate records below.
-- If nothing matches well, say so explicitly rather than guessing.
-- Always include the protocol reference ID in your answer so it can be verified.
+- Only use information present in the candidate records below. Do not add \
+dosages, indications or contraindications from your own knowledge, even if \
+you are confident they are correct.
+- Lead with the single best match. If a second record is genuinely also \
+relevant, mention it in one clause -- do not pad the answer with weak matches.
+- If none of the candidates actually answer the query, say so plainly and \
+tell the EMT to consult their agency protocol or medical control. A wrong \
+protocol confidently delivered is worse than "not found".
+- Always include the protocol reference ID so the EMT can verify it.
+- The `symptoms` and `synonyms` fields exist to help the search match how \
+EMTs phrase things. They are not diagnostic criteria -- never tell the EMT \
+what the patient has, only which protocol matches what they described.
 
-Candidate records:
+Candidate records (`score` is the search's own 0-1 confidence, not a \
+clinical judgment):
 {candidates}
 
 EMT query: "{query}"
@@ -49,21 +68,14 @@ Respond in 3-5 short sentences, EMT-radio style.
 """
 
 
-def _keyword_search(query: str, limit: int = 5):
-    """Simple scan+filter for hackathon scope. Swap for a proper search
-    (OpenSearch, or a Bedrock Knowledge Base / vector index) once you have
-    more than a few hundred protocol entries."""
-    resp = protocol_table.scan(Limit=200)
-    items = resp.get("Items", [])
-    q_terms = [t.lower() for t in query.split()]
-    scored = []
-    for item in items:
-        haystack = json.dumps(item).lower()
-        score = sum(1 for t in q_terms if t in haystack)
-        if score > 0:
-            scored.append((score, item))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [item for _, item in scored[:limit]]
+def _load_protocols():
+    """Scan the (small) protocol table.
+
+    Fine at seed scale and already the documented first thing to replace --
+    move to a Bedrock Knowledge Base or OpenSearch once this table grows
+    past a few hundred rows. Ranking happens in `search.search`.
+    """
+    return protocol_table.scan(Limit=200).get("Items", [])
 
 
 def handler(event, context):
@@ -76,9 +88,25 @@ def handler(event, context):
     except (KeyError, json.JSONDecodeError) as e:
         return error(f"Invalid request: {e}")
 
-    candidates = _keyword_search(query)
+    source_ip = event.get("requestContext", {}).get("http", {}).get("sourceIp")
+    candidates = search.search(query, _load_protocols())
+
+    def _audit(matched_ids):
+        # Logged on every path including the no-match one: the protocol
+        # table was read either way, and "what did this EMT ask that we had
+        # no answer for" is exactly what the audit trail should preserve.
+        log_audit_event(
+            user_id=user_id,
+            action="READ",
+            encounter_id=encounter_id,
+            resource="protocols",
+            payload={"query": query, "weight": weight, "matched_ids": matched_ids},
+            source_ip=source_ip,
+        )
+
     if not candidates:
-        return ok({"answer": "No matching protocol found in the database.", "matches": []})
+        _audit([])
+        return ok({"answer": NO_MATCH_ANSWER, "matches": []})
 
     prompt = ANSWER_PROMPT.format(
         candidates=json.dumps(candidates, default=str),
@@ -92,13 +120,6 @@ def handler(event, context):
     )
     answer_text = "".join(b.get("text", "") for b in resp["output"]["message"]["content"])
 
-    log_audit_event(
-        user_id=user_id,
-        action="READ",
-        encounter_id=encounter_id,
-        resource="protocols",
-        payload={"query": query, "weight": weight, "matched_ids": [c.get("protocol_id") for c in candidates]},
-        source_ip=event.get("requestContext", {}).get("http", {}).get("sourceIp"),
-    )
+    _audit([c.get("protocol_id") for c in candidates])
 
     return ok({"answer": answer_text, "matches": candidates})
