@@ -93,6 +93,7 @@ pipeline and protocol retrieval scoring; everything else is verified by
 python3 infra/tests/test_pcr_logic.py       # unit-ish, no AWS creds needed
 python3 infra/tests/test_protocol_search.py # protocol ranking + seed data
 python3 infra/tests/test_drug_classes.py    # class-level interactions + RxClass parsing
+python3 infra/tests/test_nasemso_ingest.py  # PDF parsing + extracted seed + retrieval floor
 node mobile/tools/test_streaming.mjs        # event-stream codec + SigV4 presigner
 
 # End to end against a deployed stack: Polly speaks the demo narration, then
@@ -121,6 +122,17 @@ python3 infra/seed/seed_tables.py --stage dev --region us-east-1
 # Refresh drug classes from NLM RxClass into the seed file (no AWS calls,
 # writes only drug_reference_seed.json -- review the diff, then re-seed)
 python3 infra/seed/seed_tables.py --refresh-classes
+
+# Re-extract the 71 NASEMSO protocols from the PDF (needs poppler-utils;
+# deterministic, no model calls). The PDF is not vendored -- nasemso.org
+# 403s automation, so pull it from a state EMS mirror, e.g.
+# https://ems.utah.gov/wp-content/uploads/sites/34/2024/05/National-Model-EMS-Clinical-Guidelines_2022.pdf
+python3 infra/seed/ingest_nasemso.py --pdf National-Model-EMS-Clinical-Guidelines_2022.pdf
+
+# Optional, NOT run by default: add lay-phrasing `symptoms` via Bedrock.
+# See the retrieval note below before deciding to run it.
+python3 infra/seed/generate_symptoms.py
+python3 infra/seed/generate_symptoms.py --check   # self-retrieval gate
 
 # Mobile -- run from mobile/
 npm install
@@ -194,6 +206,9 @@ Expo app (Cognito-authenticated)
 | `infra/src/protocol/search.py` | Protocol ranking — pure logic, no boto3, so it's testable offline |
 | `infra/layers/common/python/common/drugs.py` | Drug lookup/interaction rules, shared by the drug endpoints and the PCR pipeline |
 | `infra/seed/rxclass.py` | NLM RxClass client — seed-time only, never called from a Lambda |
+| `infra/seed/ingest_nasemso.py` | NASEMSO PDF → protocol records; deterministic, verbatim, no model |
+| `infra/seed/generate_symptoms.py` | Optional Bedrock pass adding lay-phrasing `symptoms` |
+| `infra/seed/nasemso_protocol_seed.json` | The 71 extracted guidelines — what gets seeded by default |
 | `infra/seed/*.json` | Demo drug/protocol data — **not clinically authoritative, labeled as such in the files**; includes alias rows for field slang |
 | `infra/tests/smoke_test_pcr.py` | End-to-end pipeline test against a live stack (Polly-generated audio, real SRP login) |
 | `infra/tests/eval_models.py` | Model-selection harness; re-run before changing `BedrockModelId` |
@@ -231,6 +246,30 @@ endpoint is a four-file change:
   that IAM gap is what makes it append-only. Only a SHA-256 `payload_hash`
   is stored, never the payload. Non-encounter actions pass
   `encounter_id="N/A"`.
+- **Protocols** — seeded from **`nasemso_protocol_seed.json`: 71 guidelines
+  extracted from the NASEMSO National Model EMS Clinical Guidelines v3**,
+  verbatim with page citations. `protocol_reference_seed.json` (the 3
+  hand-written demo protocols) is still in the repo but is **no longer
+  seeded** — it's the fixture `test_protocol_search.py` scores against, and
+  `seed_tables.py --demo-protocols` puts it back. The two sets are
+  deliberately never merged: both cover anaphylaxis, opioid overdose and
+  chest pain, and seeding both puts two competing protocols in front of a
+  medic for one presentation. `seed_tables.py` deletes protocol rows absent
+  from the file it's seeding, so switching sets doesn't leave strays.
+- **Retrieval over 71 guidelines is materially harder than over 3, and the
+  scorer is a stopgap.** `search.py` now weights terms by IDF (without it,
+  "burn victim from a house fire" answered with the lightning-strike
+  guideline — it matched the filler better), requires a query to cover 40%
+  of its terms, and makes a one-word query match a `title`/`synonyms`/
+  `symptoms` field rather than anything buried in a step. It scores ~13/18
+  on the benchmark in `test_nasemso_ingest.py::TestRetrievalQuality`, which
+  is pinned as a **floor, not a target**. Every remaining miss is the same
+  failure: the words an EMT says ("stung by a bee", "crushing substernal",
+  "pulled from a lake") have a document frequency of ~0 because NASEMSO's
+  prose doesn't use them. Scoring cannot bridge that — only a vocabulary
+  layer (`generate_symptoms.py`) or a real semantic index (Bedrock
+  Knowledge Base / OpenSearch) can, and the latter remains the documented
+  right answer.
 - **Protocols** — PK `protocol_id`. Retrieval is `scan(Limit=200)` in
   `protocol/app.py` plus token scoring in `protocol/search.py`; fine at seed
   scale, first thing to replace (Bedrock Knowledge Base / OpenSearch) if the

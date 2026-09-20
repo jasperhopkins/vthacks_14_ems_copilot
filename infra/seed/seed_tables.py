@@ -27,6 +27,8 @@ import boto3
 
 HERE = pathlib.Path(__file__).parent
 DRUG_SEED = HERE / "drug_reference_seed.json"
+NASEMSO_SEED = HERE / "nasemso_protocol_seed.json"
+DEMO_SEED = HERE / "protocol_reference_seed.json"
 
 
 def get_stack_outputs(stack_name: str, region: str) -> dict:
@@ -82,6 +84,10 @@ def main():
         "--refresh-classes", action="store_true",
         help="Refresh drug classes from NLM RxClass into the seed file, then exit. "
              "Makes no AWS calls.")
+    parser.add_argument(
+        "--demo-protocols", action="store_true",
+        help="Seed the three hand-written demo protocols instead of the 71 "
+             "extracted NASEMSO guidelines.")
     args = parser.parse_args()
 
     if args.refresh_classes:
@@ -100,11 +106,33 @@ def main():
             batch.put_item(Item=item)
     print(f"Seeded {len(drugs)} drug reference records into {drug_table.table_name}")
 
-    protocols = json.loads((HERE / "protocol_reference_seed.json").read_text())
+    # NASEMSO by default. The two sets are deliberately NOT merged: both
+    # cover anaphylaxis, opioid overdose and chest pain, and seeding both
+    # would put two competing protocols in front of a medic for the same
+    # presentation. The demo file stays in the repo as the fixture
+    # test_protocol_search.py scores against.
+    source = DEMO_SEED if args.demo_protocols else NASEMSO_SEED
+    if not source.exists():
+        sys.exit(f"{source.name} not found -- run ingest_nasemso.py first, "
+                 f"or pass --demo-protocols.")
+    protocols = json.loads(source.read_text())
+
+    # protocol_id is the partition key, so a stale record from the other set
+    # would survive a re-seed and keep answering queries. Clear first.
+    existing = protocol_table.scan(ProjectionExpression="protocol_id").get("Items", [])
+    stale = [p["protocol_id"] for p in existing
+             if p["protocol_id"] not in {r["protocol_id"] for r in protocols}]
+    if stale:
+        with protocol_table.batch_writer() as batch:
+            for pid in stale:
+                batch.delete_item(Key={"protocol_id": pid})
+        print(f"Removed {len(stale)} protocol record(s) not in {source.name}")
+
     with protocol_table.batch_writer() as batch:
         for item in protocols:
             batch.put_item(Item=item)
-    print(f"Seeded {len(protocols)} protocol records into {protocol_table.table_name}")
+    print(f"Seeded {len(protocols)} protocol records from {source.name} "
+          f"into {protocol_table.table_name}")
 
 
 if __name__ == "__main__":

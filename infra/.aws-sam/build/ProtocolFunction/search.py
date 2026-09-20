@@ -24,19 +24,27 @@ The fixes, in order of how much they matter: match folded *tokens* rather
 than substrings, score only a whitelist of meaningful fields, average over
 the query length instead of summing, and refuse to answer below a floor.
 """
+import math
 import re
 
 # Only these fields are scored. A whitelist rather than a blocklist means a
 # new boilerplate attribute (another `reference_note`) can't silently become
 # retrieval noise -- it has to be added here on purpose.
+# Tuned against an 18-query benchmark over the 71 NASEMSO guidelines (see
+# infra/tests/test_protocol_search.py::TestRetrievalQuality). Title outranks
+# synonyms deliberately: with a one-word query every weight-3 field ties at
+# 1.00, so "seizure" returned Eclampsia and Hyperthermia alongside Seizures
+# until the title could win outright.
 FIELD_WEIGHTS = {
-    "title": 3.0,
+    "title": 4.0,
     "synonyms": 3.0,       # other names for this protocol, incl. field slang
     "symptoms": 3.0,       # how an EMT actually describes the presentation
     "indications": 2.5,
+    "assessment": 2.5,     # the clinical findings vocabulary -- "wheezing",
+                           # "urticaria", "pinpoint pupils" live here
     "protocol_id": 2.0,    # so "PROT-ANAPHYLAXIS-01" retrieves itself
     "weight_based_dosage_field": 2.0,
-    "steps": 1.0,          # matches here are real but weak -- every protocol
+    "steps": 1.5,          # matches here are real but weak -- every protocol
                            # mentions oxygen, transport, IV access
 }
 MAX_FIELD_WEIGHT = max(FIELD_WEIGHTS.values())
@@ -46,6 +54,20 @@ MAX_FIELD_WEIGHT = max(FIELD_WEIGHTS.values())
 # keeps the opioid protocol (0.50) and drops chest pain, which matches only
 # on the word "pain" (0.17).
 MIN_SCORE = 0.20
+
+# A query term that matches nothing is evidence against the record, so a hit
+# also has to cover enough of the query to be believable. Scoring alone is
+# not enough: one rare term out of five can still clear the score floor.
+# Single- and two-term queries are exempt -- "seizure" and "chest pain" are
+# real queries and have nowhere to hide.
+MIN_COVERAGE = 0.4
+
+# A one-word query has no coverage signal to check, so it is checked by
+# *where* it matched instead: the word has to identify the protocol (title,
+# synonyms, symptoms), not merely appear somewhere in its body. Without
+# this, "what's the weather" scored 0.62 against Respiratory Distress on the
+# single word "weather" buried in a step.
+MIN_SHORT_QUERY_WEIGHT = 3.0
 
 # Relative floor: drop anything scoring below this fraction of the best hit.
 # The absolute floor answers "does anything match at all"; this one answers
@@ -148,7 +170,49 @@ def query_terms(query: str) -> list:
     return out
 
 
-def score_protocol(terms, item) -> tuple:
+def inverse_document_frequency(terms, items) -> dict:
+    """How much each query term should count, given how common it is here.
+
+    Field weights alone do not survive a real corpus. Across 71 NASEMSO
+    guidelines nearly every record says "patient", "assess", "consider" and
+    "transport", so an unweighted scorer answered "burn victim from a house
+    fire" with the lightning-strike guideline -- it matched "victim" and
+    "fire" no better than Burns did, but matched more of the filler.
+
+    Rare terms are the ones carrying intent, so a term's weight is scaled by
+    log(1 + N/df). A term in one protocol out of 71 counts roughly five
+    times a term in all of them. Computed per request over the same scan the
+    search already does; at seed scale that is far cheaper than maintaining
+    an index.
+    """
+    total = len(items) or 1
+    idf = {}
+    for term in terms:
+        df = sum(1 for item in items if term in _item_tokens(item))
+        # df == 0 is treated as df == 1, i.e. maximally rare. Giving an
+        # unmatched term the *lowest* weight instead made it nearly free to
+        # miss: "how do I file my tax return" scored 0.65 against the
+        # Post-ROSC guideline on the single word "return", because "file"
+        # and "tax" barely counted against it.
+        idf[term] = math.log(1 + total / max(df, 1))
+    return idf
+
+
+def _item_tokens(item) -> set:
+    """Every scored token in a record, cached on the dict by identity."""
+    cached = _TOKEN_CACHE.get(id(item))
+    if cached is None:
+        cached = set()
+        for field in FIELD_WEIGHTS:
+            cached |= _tokens(item.get(field))
+        _TOKEN_CACHE[id(item)] = cached
+    return cached
+
+
+_TOKEN_CACHE: dict = {}
+
+
+def score_protocol(terms, item, idf=None) -> tuple:
     """Score one record in [0, 1] and report which terms carried it.
 
     Each query term scores the *best* field it appears in, so a term hitting
@@ -170,9 +234,14 @@ def score_protocol(terms, item) -> tuple:
                 best[term] = weight
     if not best:
         return 0.0, []
-    score = sum(best.values()) / (len(terms) * MAX_FIELD_WEIGHT)
+    if len(terms) == 1 and max(best.values()) < MIN_SHORT_QUERY_WEIGHT:
+        return 0.0, []
+
+    idf = idf or {t: 1.0 for t in terms}
+    earned = sum(weight * idf.get(term, 1.0) for term, weight in best.items())
+    possible = sum(MAX_FIELD_WEIGHT * idf.get(term, 1.0) for term in terms)
     matched = [t for t in terms if t in best]
-    return score, matched
+    return (earned / possible if possible else 0.0), matched
 
 
 def search(query: str, items, limit: int = 5, min_score: float = MIN_SCORE) -> list:
@@ -190,9 +259,14 @@ def search(query: str, items, limit: int = 5, min_score: float = MIN_SCORE) -> l
     if not terms:
         return []
 
+    items = list(items)
+    idf = inverse_document_frequency(terms, items)
+
     scored = []
     for item in items:
-        score, matched = score_protocol(terms, item)
+        score, matched = score_protocol(terms, item, idf)
+        if len(terms) > 2 and len(matched) / len(terms) < MIN_COVERAGE:
+            continue
         if score >= min_score:
             entry = dict(item)
             entry["score"] = round(score, 3)
